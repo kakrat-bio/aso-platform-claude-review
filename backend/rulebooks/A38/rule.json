@@ -1,0 +1,75 @@
+{
+  "id": "A38",
+  "enabled": true,
+  "name": "Aptamer-Drug Conjugate (ApDC)",
+  "category": "Targeted Delivery / Ligand Binding",
+  "therapeuticGoalIds": [
+    "TG09"
+  ],
+  "therapeuticGoalDescription": "Deliver a cytotoxic or therapeutic payload to specific cells by conjugating it to an RNA aptamer that binds a cell-surface protein on the target cell type.",
+  "molecularDefect": "Diseases requiring targeted drug delivery to specific cell populations, particularly cancers and autoimmune diseases.",
+  "diseaseMechanism": "An RNA aptamer binds a cell-surface marker specific to the target cell type (e.g., tumor-associated antigen). A therapeutic payload (cytotoxic drug, siRNA, or immunomodulator) is chemically conjugated to the aptamer. The aptamer internalizes upon binding, delivering the payload selectively to target cells while sparing normal tissue.",
+  "suitableVariantTypes": "Cancers with defined surface markers; autoimmune diseases with pathogenic cell populations; any disease requiring cell-type-specific drug delivery.",
+  "typicalDiseases": "Hematologic malignancies (CD30+ lymphoma); solid tumors (PSMA+ prostate cancer); autoimmune diseases (CD20+ B cells). Preclinical and early clinical.",
+  "rnaTargetRegion": "Not applicable (targets cell-surface proteins rather than RNA).",
+  "transcriptRequirement": "None.",
+  "asoChemistry": null,
+  "typicalLength": "Aptamer: 30-80 nt; linker: variable; payload: variable (drug, siRNA, etc.).",
+  "designRules": "Select aptamer against cell-surface marker via SELEX; optimize internalization efficiency; design conjugation chemistry (click chemistry, disulfide bond, thiol-maleimide); validate payload delivery and efficacy in vitro.",
+  "secondaryStructureRequirement": "Essential. Aptamer must maintain binding structure after conjugation.",
+  "offTargetConsiderations": "Off-target delivery to cells expressing low levels of the target marker; payload toxicity to normal tissues; aptamer degradation in serum.",
+  "advantages": "Targeted delivery reduces systemic toxicity; aptamers have low immunogenicity; modular design allows different payloads; can be engineered for controlled release.",
+  "limitations": "Aptamer stability in serum requires chemical modification; conjugation chemistry may affect binding; internalization efficiency varies; limited clinical validation.",
+  "fdaApprovedDrugs": "None (bexarotene and other targeted therapies use antibody conjugates, not aptamer conjugates)",
+  "clinicalTrialExamples": "AS1411 (nucleolin-targeting aptamer in cancer); no approved aptamer-drug conjugates.",
+  "evidenceLevel": {
+    "rating": "Low-Moderate",
+    "note": "Preclinical proof-of-concept in several cancer models; no clinical-stage aptamer-drug conjugates."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. McNamara et al. (2006); Dassie et al. (2009); Zhou et al. (2017).",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "McNamara JO et al. Cell type-specific delivery by aptamer-drug conjugates. Nature Biotechnology (2006)",
+      "doi": "10.1038/nbt1181",
+      "usedFor": "Original aptamer-drug conjugate concept.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R2",
+      "paper": "Dassie JP et al. Aptamer-drug conjugates targeting PSMA+ tumors. Blood (2009)",
+      "doi": "10.1182/blood-2009-02-205864",
+      "usedFor": "PSMA-targeting ApDC in prostate cancer.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R3",
+      "paper": "Zhou J et al. Aptamer-drug conjugates: targeted delivery for cancer therapy. Adv Drug Deliv Rev (2017)",
+      "doi": "10.1016/j.addr.2017.01.008",
+      "usedFor": "Comprehensive review of ApDC platforms.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "flag_only",
+    "goalTags": [
+      "TG09"
+    ],
+    "primaryGoal": "TG09",
+    "defectClasses": [
+      "targeted_delivery_candidate"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": false,
+    "designUnavailableReason": "Requires SELEX-based aptamer selection, conjugation chemistry optimization, and payload design.",
+    "flagReason": "Preclinical only; no aptamer-drug conjugate has received clinical approval. Surfaced qualitatively."
+  }
+}

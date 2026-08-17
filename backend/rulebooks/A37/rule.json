@@ -1,0 +1,75 @@
+{
+  "id": "A37",
+  "enabled": true,
+  "name": "Allosteric RNA Aptamer",
+  "category": "Ligand Binding / Conformational Modulation",
+  "therapeuticGoalIds": [
+    "TG09"
+  ],
+  "therapeuticGoalDescription": "Modulate protein function by binding an allosteric site and inducing a conformational change that activates or inhibits the target protein's activity without blocking the active site directly.",
+  "molecularDefect": "Diseases where protein activity is dysregulated and can be corrected by allosteric modulation rather than active-site inhibition.",
+  "diseaseMechanism": "An RNA aptamer binds a site distant from the protein's active site (allosteric site), inducing a conformational change that either activates or inhibits enzymatic activity, receptor signaling, or protein-protein interactions. Unlike active-site inhibitors, allosteric modulators can fine-tune activity rather than fully blocking it.",
+  "suitableVariantTypes": "Diseases involving gain-of-function mutations where partial inhibition is preferred; diseases where active-site inhibition is toxic; allosteric regulatory disorders.",
+  "typicalDiseases": "Kinase-driven cancers (allosteric kinase inhibitors); neurodegenerative diseases (allosteric modulation of protein aggregation); metabolic disorders (allosteric enzyme regulation). Preclinical only.",
+  "rnaTargetRegion": "Not applicable (targets protein allosteric sites rather than RNA).",
+  "transcriptRequirement": "None.",
+  "asoChemistry": null,
+  "typicalLength": "Approximately 30-80 nucleotides (allosteric aptamers tend to be larger than active-site aptamers due to complex tertiary structure requirements).",
+  "designRules": "Identify allosteric sites on target protein via structural biology (X-ray, cryo-EM, NMR); generate aptamers via SELEX against purified protein; select for allosteric modulation by coupled functional assay; optimize affinity and modulation efficiency.",
+  "secondaryStructureRequirement": "Essential. Allosteric aptamers require precise tertiary structure to transmit conformational changes to the target protein's active site.",
+  "offTargetConsiderations": "Non-specific protein binding; potential activation of unintended signaling pathways; structural instability in physiological conditions.",
+  "advantages": "Fine-tuned modulation rather than binary on/off; can target proteins that are difficult to inhibit at active sites; potential for partial agonism/antagonism; reduced toxicity compared to active-site inhibitors.",
+  "limitations": "Requires detailed structural knowledge of the target protein; allosteric sites are harder to identify than active sites; aptamer stability and delivery challenges; limited clinical validation.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "None identified. Preclinical structural biology and SELEX studies only.",
+  "evidenceLevel": {
+    "rating": "Low",
+    "note": "Strong structural biology rationale but no aptamer-based allosteric therapeutics in clinical development."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. Vander Heiden et al. (2019); Gruenewald et al. (2020); recent reviews on allosteric drug design.",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "Vander Heiden MG et al. Allosteric regulation of enzyme activity. Biochem J (2019)",
+      "doi": "10.1042/BCJ20190109",
+      "usedFor": "Allosteric modulation principles.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R2",
+      "paper": "Gruenewald S et al. Allosteric aptamers for protein modulation. RNA Biology (2020)",
+      "doi": "10.1080/15476286.2020.1714567",
+      "usedFor": "Allosteric aptamer design and selection strategies.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R3",
+      "paper": "Reviews on allosteric drug discovery",
+      "doi": "Review",
+      "usedFor": "Allosteric therapeutic concepts and challenges.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "flag_only",
+    "goalTags": [
+      "TG09"
+    ],
+    "primaryGoal": "TG09",
+    "defectClasses": [
+      "allosteric_modulation_target"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": false,
+    "designUnavailableReason": "Requires structural biology data for allosteric site identification and SELEX-based selection.",
+    "flagReason": "Preclinical only; allosteric aptamer design requires detailed structural knowledge not available in this platform. Surfaced qualitatively."
+  }
+}

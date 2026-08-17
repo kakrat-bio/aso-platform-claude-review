@@ -188,6 +188,28 @@ MOLECULAR_DEFECTS: dict[str, str] = {
         "Disease in which forcing retention of a specific intron is "
         "therapeutic (NMD of a toxic transcript, micropeptide, or regulatory RNA)"
     ),
+    # TG08 / TG09 expansion (organism-tier docx). All six mechanisms these
+    # serve are flag_only, so these terms gate which qualitative signpost is
+    # relevant — they never enter a score.
+    "exon_replacement_candidate": (
+        "Multi-exon or large coding lesion where replacing a segment of the "
+        "transcript is preferable to correcting it"
+    ),
+    "nonsense_mutation": (
+        "Premature termination codon truncating the protein product"
+    ),
+    "allosteric_modulation_target": (
+        "Protein whose activity is best modulated at an allosteric site "
+        "rather than the active site"
+    ),
+    "targeted_delivery_candidate": (
+        "Disease requiring cell-type-selective delivery of a payload to an "
+        "internalising surface receptor"
+    ),
+    "dual_target_engagement": (
+        "Disease requiring simultaneous engagement of two targets by one "
+        "molecule"
+    ),
     # from A27's own molecularDefect field. TG06 gated on a (goal, element)
     # pair rather than a defect, so this term had no home in the old
     # per-goal vocabularies and had to be added when they were unioned.
@@ -932,7 +954,7 @@ def modality_flags(
 
     out.append({
         "flag": "protein_replacement",
-        "mechanisms": ["A24", "A26"],
+        "mechanisms": ["A24", "A26", "A34", "A35", "A36"],
         "raised": not blockers,
         "message": (
             _replacement_message(results)
@@ -940,7 +962,8 @@ def modality_flags(
             else None
         ),
         "withheldBecause": blockers or None,
-        "reasons": [by_id[m]["rationale"] for m in ("A24", "A26") if m in by_id],
+        "reasons": [by_id[m]["rationale"]
+                    for m in ("A24", "A26", "A34", "A35", "A36") if m in by_id],
         "scored": False,
         "note": (
             "This platform does not evaluate or design replacement therapies."
@@ -968,7 +991,7 @@ def modality_flags(
 
     out.append({
         "flag": "aptamer",
-        "mechanisms": ["A25"],
+        "mechanisms": ["A25", "A37", "A38", "A39"],
         "raised": not ap_blockers,
         "message": (
             "No transcript-acting silencing mechanism is viable for this "
@@ -980,7 +1003,8 @@ def modality_flags(
             else None
         ),
         "withheldBecause": ap_blockers or None,
-        "reasons": [by_id["A25"]["rationale"]] if "A25" in by_id else [],
+        "reasons": [by_id[m]["rationale"]
+                    for m in ("A25", "A37", "A38", "A39") if m in by_id],
         "scored": False,
         "note": "This platform does not evaluate or design aptamers.",
     })

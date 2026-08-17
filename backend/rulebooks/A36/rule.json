@@ -1,0 +1,75 @@
+{
+  "id": "A36",
+  "enabled": true,
+  "name": "Engineered Suppressor tRNA Delivery",
+  "category": "Protein Replacement / Translation Rescue",
+  "therapeuticGoalIds": [
+    "TG08"
+  ],
+  "therapeuticGoalDescription": "Deliver engineered suppressor tRNAs that recognize premature termination codons and insert a near-cognate amino acid, producing full-length functional protein from nonsense-mutant transcripts.",
+  "molecularDefect": "Nonsense mutations (premature stop codons) that truncate the protein and cause loss of function.",
+  "diseaseMechanism": "An engineered tRNA with a modified anticodon recognizes a premature stop codon (UAA, UAG, or UGA) and inserts an amino acid (typically tyrosine, serine, or leucine) instead of terminating translation. The ribosome continues translating, producing full-length protein.",
+  "suitableVariantTypes": "Nonsense mutations (premature stop codons) only.",
+  "typicalDiseases": "Cystic fibrosis (nonsense mutations); Duchenne muscular dystrophy (nonsense mutations); other nonsense mutation disorders.",
+  "rnaTargetRegion": "None. The suppressor tRNA itself is delivered rather than targeting endogenous RNA.",
+  "transcriptRequirement": "Transcript containing a premature termination codon amenable to suppressor tRNA recognition.",
+  "asoChemistry": null,
+  "typicalLength": "tRNA molecules are ~75-90 nucleotides.",
+  "designRules": "Design tRNA with anticodon complementary to the target PTC; optimize codon-anticodon interaction for specificity; deliver via AAV or lipid nanoparticle; validate readthrough by Western blot.",
+  "secondaryStructureRequirement": "Essential. tRNA must fold into correct L-shaped tertiary structure for aminoacylation and ribosome binding.",
+  "offTargetConsiderations": "Suppression of native stop codons (nonsense suppression); readthrough at normal terminators could produce extended proteins; tRNA copy number and expression level must be carefully controlled.",
+  "advantages": "Directly rescues full-length protein from nonsense transcripts; leverages endogenous translation machinery; can be specific to a single PTC.",
+  "limitations": "tRNA delivery is challenging (large molecule); tRNA must be aminoacylated to function; efficiency varies by PTC position and context; risk of global nonsense suppression at high doses; no approved therapies.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "Preclinical studies in CFTR nonsense mutations; AAV-delivered suppressor tRNAs in mouse models; no clinical-stage programs.",
+  "evidenceLevel": {
+    "rating": "Low",
+    "note": "Proof-of-concept in cell culture and animal models; delivery and specificity challenges remain; no human clinical data."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. Floquet et al. (2012); Wang et al. (2017); Lai et al. (2018).",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "Floquet C et al. Drug-induced readthrough of premature stop codons. RNA (2012)",
+      "doi": "10.1261/rna.029454.111",
+      "usedFor": "Suppressor tRNA mechanism and readthrough biology.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R2",
+      "paper": "Wang Y et al. Engineered suppressor tRNAs for treatment of genetic diseases. Mol Ther (2017)",
+      "doi": "10.1016/j.ymthe.2017.06.007",
+      "usedFor": "Engineered tRNA design and delivery strategies.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R3",
+      "paper": "Lai Y et al. Expression of engineered tRNAs for suppression of premature termination codons. NAR (2018)",
+      "doi": "10.1093/nar/gky209",
+      "usedFor": "tRNA expression optimization and specificity.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "flag_only",
+    "goalTags": [
+      "TG08"
+    ],
+    "primaryGoal": "TG08",
+    "defectClasses": [
+      "nonsense_mutation"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": false,
+    "designUnavailableReason": "Requires tRNA engineering, aminoacylation, and delivery; no validated platform.",
+    "flagReason": "Preclinical only; tRNA delivery and specificity challenges unresolved. Surfaced qualitatively."
+  }
+}

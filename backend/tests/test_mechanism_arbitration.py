@@ -268,17 +268,20 @@ def test_flagged_mechanisms_never_enter_the_ranking():
     so any applicability figure for them would be unverifiable."""
     out = A.arbitrate(A.ArbitrationContext(
         gene_symbol="X", molecular_defect="haploinsufficiency"))
-    assert not {"A24", "A25", "A26"} & set(_ids(out["results"]))
+    flagged = {"A24", "A25", "A26", "A34", "A35", "A36", "A37", "A38", "A39"}
+    assert not flagged & set(_ids(out["results"]))
 
 
 def test_no_mechanism_was_deleted():
     """Every rulebook still resolves, including the flagged and halted ones."""
     ids = A.all_mechanism_ids()
-    # 27 originals + A29/A30/A31 (TG06 restoration) + A32/A33 (TG07).
-    assert len(ids) == 32
+    # 27 originals + A29-A31 (TG06) + A32/A33 (TG07) + A34-A36 (TG08 flags)
+    # + A37-A39 (TG09 flags).
+    assert len(ids) == 38
     assert "A22" not in ids, "A22 has never existed; see the implementation notes"
-    for restored in ("A29", "A30", "A31", "A32", "A33"):
-        assert restored in ids
+    for added in ("A29", "A30", "A31", "A32", "A33",
+                  "A34", "A35", "A36", "A37", "A38", "A39"):
+        assert added in ids
     for mid in ids:
         assert A.load_rule(mid)["arbitration"], mid
 
@@ -535,3 +538,22 @@ def test_delta_scores_refuse_length_changing_variants():
     e1, intron, e2 = _synthetic_pre_mrna()
     pre = e1 + intron + e2
     assert SAI.delta_scores(pre, pre + "A") is None
+
+
+def test_aptamer_candidates_carry_no_fabricated_numbers():
+    """TG09 returns guidance strings, never invented measurements.
+
+    No aptamer has been selected, so there is no sequence to fold, no Tm, no
+    dG and no measured Kd. The endpoint previously derived all of those from
+    hash() of the form inputs and rendered them as measurements.
+    """
+    from api.mechanisms import _aptamer_candidate_from_rule
+
+    for mid in ("A25", "A37", "A38", "A39"):
+        cand = _aptamer_candidate_from_rule(mid, 1)
+        for numeric in ("tm", "deltaGFolding", "targetSpecificityScore",
+                        "sequence", "dotBracket", "foldingScore", "tHalfScore"):
+            assert cand[numeric] is None, f"{mid}.{numeric} must not be invented"
+        assert cand["scored"] is False
+        # Guidance is a string about what SELEX would determine, not a number.
+        assert isinstance(cand["kdPrediction"], str)

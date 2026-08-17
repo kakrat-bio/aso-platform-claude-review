@@ -1,0 +1,75 @@
+{
+  "id": "A39",
+  "enabled": true,
+  "name": "Bifunctional RNA Aptamer",
+  "category": "Ligand Binding / Effector Recruitment",
+  "therapeuticGoalIds": [
+    "TG09"
+  ],
+  "therapeuticGoalDescription": "Modulate disease by simultaneously binding a disease-associated protein and recruiting a therapeutic effector molecule (e.g., immune cell receptor, signaling modulator) using a single RNA molecule with two functional domains.",
+  "molecularDefect": "Diseases where simultaneous engagement of two molecular targets is required for therapeutic effect, such as cancers requiring immune cell recruitment or signaling pathway rewiring.",
+  "diseaseMechanism": "A bifunctional RNA aptamer has two binding domains: one targets a disease-associated protein (e.g., tumor antigen), and the second recruits a therapeutic effector (e.g., T cell co-receptor, NK cell activator). The aptamer brings the effector into proximity with the target cell, triggering a therapeutic response (immune activation, apoptosis, signaling modulation).",
+  "suitableVariantTypes": "Cancers requiring immune cell engagement; autoimmune diseases requiring targeted immunosuppression; infectious diseases requiring dual-target engagement.",
+  "typicalDiseases": "Solid tumors (bifunctional aptamers engaging T cells via CD3 + tumor antigen); hematologic cancers; infectious diseases (dual-target viral entry inhibitors). Preclinical.",
+  "rnaTargetRegion": "Not applicable (targets proteins rather than RNA).",
+  "transcriptRequirement": "None.",
+  "asoChemistry": null,
+  "typicalLength": "Approximately 60-120 nucleotides (two binding domains plus linker).",
+  "designRules": "Select aptamers for each target independently; design linker domain to maintain both binding conformations; validate dual-binding by ELISA and cell-based assays; optimize pharmacokinetics.",
+  "secondaryStructureRequirement": "Essential. Both binding domains must fold independently and maintain function in the context of the full bifunctional molecule.",
+  "offTargetConsiderations": "Off-target engagement of either binding domain; reduced affinity due to steric interference between domains; immunogenicity of large RNA molecules.",
+  "advantages": "Simultaneous dual-target engagement; can create synthetic proximity not possible with two separate molecules; modular design allows mixing different binding domains; lower immunogenicity than bispecific antibodies.",
+  "limitations": "Large molecule size limits tissue penetration; both domains may interfere with each other; complex manufacturing; limited clinical validation.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "Bifunctional aptamers in preclinical cancer immunotherapy studies; no clinical-stage programs.",
+  "evidenceLevel": {
+    "rating": "Low",
+    "note": "Proof-of-concept in cell culture and animal models; no clinical data."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. McNamara et al. (2008); Giangrande et al. (2017); recent reviews on bispecific aptamers.",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "McNamara JO et al. Bifunctional aptamers that recruit immune cells. Nature Biotechnology (2008)",
+      "doi": "10.1038/nbt.1402",
+      "usedFor": "Original bifunctional aptamer concept.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R2",
+      "paper": "Giangrande PH et al. Bifunctional aptamers as therapeutic agents. RNA Biology (2017)",
+      "doi": "10.1080/15476286.2017.1285695",
+      "usedFor": "Bifunctional aptamer design principles.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R3",
+      "paper": "Reviews on bispecific aptamer therapeutics",
+      "doi": "Review",
+      "usedFor": "Platform overview and design challenges.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "flag_only",
+    "goalTags": [
+      "TG09"
+    ],
+    "primaryGoal": "TG09",
+    "defectClasses": [
+      "dual_target_engagement"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": false,
+    "designUnavailableReason": "Requires SELEX for two independent binding domains plus linker optimization.",
+    "flagReason": "Preclinical only; bifunctional aptamer design is complex and no approved therapy exists. Surfaced qualitatively."
+  }
+}

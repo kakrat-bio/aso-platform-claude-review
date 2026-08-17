@@ -1,0 +1,75 @@
+{
+  "id": "A34",
+  "enabled": true,
+  "name": "Trans-splicing ASO-Mediated Exon Replacement",
+  "category": "Protein Replacement / Transcript Repair",
+  "therapeuticGoalIds": [
+    "TG08"
+  ],
+  "therapeuticGoalDescription": "Replace a defective exon in the endogenous transcript with a wild-type exon delivered via a bifunctional trans-splicing ASO, producing a corrected mRNA that encodes functional protein.",
+  "molecularDefect": "Loss-of-function mutations located in one or a small number of exons where replacement with wild-type sequence restores a functional protein.",
+  "diseaseMechanism": "A bifunctional ASO binds both the target pre-mRNA (via antisense to an intronic region flanking the defective exon) and a donor RNA carrying the wild-type exon. The ASO recruits the spliceosome to skip the defective exon and splice in the wild-type donor exon, producing a chimeric mRNA with corrected sequence.",
+  "suitableVariantTypes": "Exonic point mutations; small insertions/deletions within exons; mutations where replacement of one or a few exons restores reading frame and protein function.",
+  "typicalDiseases": "Dystrophin restoration in DMD (exon replacement, not skipping); hemoglobinopathies (experimental); other genetic disorders with defined exonic mutations.",
+  "rnaTargetRegion": "Intronic sequences flanking the target exon on the pre-mRNA; splice donor/acceptor sites of the target exon.",
+  "transcriptRequirement": "Disease-relevant transcript with a defined exonic mutation amenable to exon replacement. Must have accessible intronic regions for ASO binding.",
+  "asoChemistry": "Bifunctional ASOs: antisense wing (RNase H-inactive, e.g., PMO or 2'-MOE) for pre-mRNA binding + splice site-blocking wing for spliceosome recruitment.",
+  "typicalLength": "Antisense wing: 20-30 nt; donor exon construct: variable (typically 100-300 nt including splice signals).",
+  "designRules": "Identify target exon and flanking intronic sequences; design antisense wing complementary to pre-mRNA intronic region; design donor RNA with wild-type exon + splice signals; validate trans-splicing efficiency by RT-PCR and protein restoration.",
+  "secondaryStructureRequirement": "Accessible intronic regions for ASO binding; splice signals must be functional on both endogenous pre-mRNA and donor RNA.",
+  "offTargetConsiderations": "Potential off-target trans-splicing at partially complementary intronic sequences; incomplete replacement may produce chimeric proteins.",
+  "advantages": "Repairs endogenous transcript without genomic modification; can restore full-length protein from a single exon replacement; leverages natural spliceosome machinery.",
+  "limitations": "Low trans-splicing efficiency in most systems; bifunctional ASO design is complex; delivery of donor RNA adds complexity; no approved therapies.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "Preclinical studies in DMD mouse models (exon replacement); no clinical-stage programs.",
+  "evidenceLevel": {
+    "rating": "Low",
+    "note": "Proof-of-concept in animal models; no human clinical data for ASO-mediated trans-splicing."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. Bhatt et al. (2015); Puttaraju et al. (1999); Wally et al. (2018).",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "Bhatt DM et al. Transcriptome-wide analysis of alternative splicing and processing using trans-splicing ASOs. RNA (2015)",
+      "doi": "10.1261/rna.048504.114",
+      "usedFor": "Trans-splicing ASO mechanism and efficiency.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R2",
+      "paper": "Puttaraju M et al. A spliceosome-mediated ribozyme that restores correct reading frames. Nature Biotechnology (1999)",
+      "doi": "10.1038/7047",
+      "usedFor": "Early trans-splicing therapeutic concept.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R3",
+      "paper": "Wally V et al. RNA trans-splicing in the skin: from basic science to clinical applications. JID (2018)",
+      "doi": "10.1016/j.jid.2017.10.030",
+      "usedFor": "Trans-splicing applications in genetic skin diseases.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "flag_only",
+    "goalTags": [
+      "TG08"
+    ],
+    "primaryGoal": "TG08",
+    "defectClasses": [
+      "exon_replacement_candidate"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": true,
+    "requiredFeatures": [],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": false,
+    "designUnavailableReason": "Requires bifunctional ASO design with spliceosome recruitment; no validated design rules.",
+    "flagReason": "Preclinical only; trans-splicing efficiency is low and no approved therapy exists. Surfaced qualitatively."
+  }
+}

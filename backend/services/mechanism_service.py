@@ -552,9 +552,22 @@ def _flagged_mechanism(mechanism_id: str) -> dict:
     }
 
 
+# TG09 now carries four flagged mechanisms; TG08 carries five.
+PROTEIN_FUNCTION_MECHANISM_IDS = ["A25", "A37", "A38", "A39"]
+PROTEIN_REPLACEMENT_MECHANISM_IDS = ["A24", "A26", "A34", "A35", "A36"]
+
+
 def lookup_protein_function_modulation() -> dict:
-    """A25, as rulebook content. No score, no rank."""
-    return _flagged_mechanism("A25")
+    """A25 and the three aptamer variants, as rulebook content.
+
+    No score, no rank. `mechanisms` carries all four; the top-level fields
+    stay on A25 so existing callers keep working.
+    """
+    primary = _flagged_mechanism("A25")
+    primary["mechanisms"] = [
+        _flagged_mechanism(m) for m in PROTEIN_FUNCTION_MECHANISM_IDS
+    ]
+    return primary
 
 
 def protein_replacement_scope_notice() -> dict:
@@ -562,6 +575,7 @@ def protein_replacement_scope_notice() -> dict:
     return {
         "status": "FLAGGED",
         "scored": False,
-        "mechanisms": [_flagged_mechanism(m) for m in ("A24", "A26")],
+        "mechanisms": [_flagged_mechanism(m)
+                       for m in PROTEIN_REPLACEMENT_MECHANISM_IDS],
         "goalNotice": RETIRED_AS_SCORING_PARTITION["TG08"],
     }

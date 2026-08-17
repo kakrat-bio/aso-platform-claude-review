@@ -44,6 +44,7 @@ from typing import Optional
 
 from services.mechanism_arbitration import (
     ArbitrationContext,
+    load_rule,
     MOLECULAR_DEFECTS,
     RETIRED_AS_SCORING_PARTITION,
     arbitrate,
@@ -436,6 +437,44 @@ async def translational_regulation_mechanisms(payload: TranslationalRegulationRe
       }
 
 
+def _aptamer_candidate_from_rule(mechanism_id: str, rank: int) -> dict:
+    """One flagged aptamer mechanism, shaped like a candidate row.
+
+    Every quantitative field is None. These are NOT predictions and there is
+    nothing to predict from: no aptamer has been selected, so there is no
+    sequence to fold, no Tm, no dG and no measured Kd. The earlier version of
+    this endpoint filled those fields from hash() of the form inputs, which
+    rendered as measurements.
+
+    The guidance strings say what a real SELEX campaign would determine,
+    which is genuinely useful and is not a number.
+    """
+    rule = load_rule(mechanism_id) or {}
+    arb = rule.get("arbitration", {})
+    return {
+        "rank": rank,
+        "constructId": f"APT-{mechanism_id}-001",
+        "mechanismId": mechanism_id,
+        "mechanismName": rule.get("name"),
+        "structuralMotif": "SELEX-derived",
+        "length": "~20-100 nt",
+        "tm": None,
+        "deltaGFolding": None,
+        "kdPrediction": "nanomolar range (SELEX-dependent)",
+        "targetSpecificityScore": None,
+        "serumStability": "requires chemical stabilization",
+        "structuralRigidityFlag": "dependent on selected aptamer",
+        "sequence": None,
+        "dotBracket": None,
+        "rationale": rule.get("designRules", ""),
+        "foldingScore": None,
+        "tHalfScore": None,
+        "scored": False,
+        "flagReason": arb.get("flagReason"),
+        "designUnavailableReason": arb.get("designUnavailableReason"),
+    }
+
+
 @router.post("/api/mechanisms/rna-engineering")
 async def rna_engineering_mechanisms(payload: RnaEngineeringRequest):
     if payload.structural_class not in RNA_ENGINEERING_STRUCTURAL_CLASSES:
@@ -474,6 +513,11 @@ async def rna_engineering_mechanisms(payload: RnaEngineeringRequest):
     # the unified pass from feature B1; call /api/mechanisms/arbitrate for
     # that. This endpoint returns the rulebook content behind the flag.
     lookup = lookup_protein_function_modulation()
+    mechanisms = lookup.get("mechanisms", [])
+    candidates = [
+        _aptamer_candidate_from_rule(m["mechanismId"], i + 1)
+        for i, m in enumerate(mechanisms)
+    ]
 
     return {
         "geneSymbol": payload.gene_symbol.strip().upper(),
@@ -489,8 +533,8 @@ async def rna_engineering_mechanisms(payload: RnaEngineeringRequest):
             "deliveryContext": payload.delivery_context,
         },
         "mechanism": lookup,
-        "mechanisms": [],
-        "candidates": [],
+        "mechanisms": mechanisms,
+        "candidates": candidates,
     }
 
 

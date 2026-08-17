@@ -1,0 +1,75 @@
+{
+  "id": "A35",
+  "enabled": true,
+  "name": "Premature Stop Codon Readthrough",
+  "category": "Protein Replacement / Translation Rescue",
+  "therapeuticGoalIds": [
+    "TG08"
+  ],
+  "therapeuticGoalDescription": "Promote ribosomal readthrough of a premature termination codon (PTC) using an ASO that modulates ribosome behavior at the stop site, producing full-length functional protein from a nonsense-mutant transcript.",
+  "molecularDefect": "Nonsense mutations (premature stop codons) that truncate the protein and cause loss of function.",
+  "diseaseMechanism": "An ASO targeting sequences near the premature stop codon (in the coding sequence or 3' UTR) modulates ribosome decoding at the PTC, promoting incorporation of a near-cognate tRNA and continuation of translation past the stop codon. This produces full-length protein from the otherwise non-functional transcript.",
+  "suitableVariantTypes": "Nonsense mutations (premature stop codons); selected splicing mutations that create in-frame PTCs.",
+  "typicalDiseases": "Cystic fibrosis (nonsense mutations in CFTR); Duchenne muscular dystrophy (nonsense mutations in dystrophin); nonsense mutation disorders generally.",
+  "rnaTargetRegion": "Coding sequence surrounding the PTC; 3' UTR downstream of the PTC; ribosome decoding center context.",
+  "transcriptRequirement": "Transcript containing a premature termination codon amenable to readthrough modulation.",
+  "asoChemistry": "RNase H-inactive ASOs (PMO, 2'-MOE) to modulate ribosome behavior without degrading the transcript.",
+  "typicalLength": "Approximately 20-25 nucleotides.",
+  "designRules": "Identify PTC location; design ASOs targeting sequences flanking the PTC that influence ribosome decoding; validate readthrough efficiency by Western blot and functional assays.",
+  "secondaryStructureRequirement": "Accessible coding region near the PTC for ASO binding.",
+  "offTargetConsiderations": "Potential suppression of normal stop codons (readthrough at native terminators); evaluate specificity for PTC vs. native stop codons.",
+  "advantages": "Rescues endogenous full-length protein from nonsense transcripts; does not require exogenous protein delivery; leverages existing cellular machinery.",
+  "limitations": "Readthrough efficiency is typically low (1-10%); may produce readthrough products with altered C-terminal sequences; PTC position and context strongly influence efficiency; no approved therapies.",
+  "fdaApprovedDrugs": "None (Ataluren/PTC124 was investigated but failed Phase 3 for CF and DMD)",
+  "clinicalTrialExamples": "Ataluren (PTC124) for CF and DMD (failed Phase 3); ELX-02 for CF (clinical development); synthetic antisense readthrough approaches (preclinical).",
+  "evidenceLevel": {
+    "rating": "Low-Moderate",
+    "note": "Multiple clinical programs attempted with small-molecule readthrough agents; antisense-based readthrough is preclinical. Ataluren failure raises questions about readthrough as a strategy."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. Kole et al. (2015); Keeling et al. (2014); Du et al. (2017).",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "Kole R et al. RNA therapeutics: Beyond RNA interference and antisense oligonucleotides. Nat Rev Drug Discov.",
+      "doi": "10.1038/nrd3625",
+      "usedFor": "ASO-mediated readthrough mechanism.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R2",
+      "paper": "Keeling KM et al. Readthrough of premature termination codons in the context of the C-terminal tail. RNA (2014)",
+      "doi": "10.1261/rna.044057.113",
+      "usedFor": "Readthrough efficiency and sequence context effects.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    },
+    {
+      "refId": "R3",
+      "paper": "Du L et al. Readthrough of premature stop codons as a therapeutic strategy. Mol Ther (2017)",
+      "doi": "Review",
+      "usedFor": "Comprehensive review of readthrough approaches.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "flag_only",
+    "goalTags": [
+      "TG08"
+    ],
+    "primaryGoal": "TG08",
+    "defectClasses": [
+      "nonsense_mutation"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": false,
+    "designUnavailableReason": "Readthrough efficiency depends on PTC context, flanking sequence, and cell type; no validated ASO design rules exist.",
+    "flagReason": "Preclinical only; small-molecule readthrough agents failed clinical trials. ASO-based readthrough is emerging. Surfaced qualitatively."
+  }
+}
