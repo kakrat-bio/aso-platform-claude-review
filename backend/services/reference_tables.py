@@ -43,6 +43,9 @@ TABLES: dict[str, str] = {
     "alt_promoter_benefit": "gene_symbol",
     "intron_retention_potential": "gene_symbol",
     "intron_retention_benefit": "gene_symbol",
+    # Pre-seed for the real-data cache: verified transcript parts for common
+    # therapeutic targets, used when the live source is unreachable.
+    "curated_transcript_parts": "gene_symbol",
 }
 
 _cache: dict[str, dict[str, list[dict]]] = {}

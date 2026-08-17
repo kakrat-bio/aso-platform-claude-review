@@ -1,5 +1,12 @@
 export type OrganismStatus = "live" | "curated" | "comingSoon";
 
+export interface OrganismCapabilities {
+  /** Gene lookup from Ensembl / NCBI. Available for every organism. */
+  geneInfo: boolean;
+  /** Therapeutic-goal + mechanism arbitration flow. */
+  mechanisms: boolean;
+}
+
 export interface Organism {
   id: string; // stable key used in UI state + API calls
   commonName: string;
@@ -11,6 +18,86 @@ export interface Organism {
   ensemblSpecies?: string;
   /** NCBI/UniProt taxonomy ID, used for UniProt organism_id filtering. */
   taxonId?: number;
+  /**
+   * Per-organism override of the tier default. Omit to inherit
+   * `defaultCapabilitiesForTier`.
+   */
+  capabilities?: Partial<OrganismCapabilities>;
+}
+
+/**
+ * Tier defaults for the mechanism flow.
+ *
+ * Tier 1-3 (clinical, model and veterinary species) are on by default: they
+ * resolve through Ensembl with full transcript structure, which is what the
+ * mechanism arbitration needs.
+ *
+ * Tier 4-6 (plants, viruses, bacteria) are OPT-IN rather than blocked. The
+ * rulebooks are written around mammalian RNA biology — NMD, ADAR editing,
+ * RNase H1, the spliceosome — so applying them to a bacterium or a plant is
+ * a judgement the user makes explicitly, not a default the product makes for
+ * them. Nothing is hidden; the flow is simply not pre-enabled.
+ */
+export function defaultCapabilitiesForTier(tier: number): OrganismCapabilities {
+  return { geneInfo: true, mechanisms: tier >= 1 && tier <= 3 };
+}
+
+/** Resolved capabilities: tier default, with any per-organism override. */
+export function organismCapabilities(
+  organism: Organism | undefined,
+): OrganismCapabilities {
+  if (!organism) return { geneInfo: false, mechanisms: false };
+  return { ...defaultCapabilitiesForTier(organism.tier), ...organism.capabilities };
+}
+
+/**
+ * Does this organism support the mechanism flow, accounting for an explicit
+ * opt-in? `optedIn` carries the user's own choice for a Tier 4-6 organism.
+ */
+export function supportsMechanisms(
+  organismId: string,
+  optedIn = false,
+): boolean {
+  const org = getOrganism(organismId);
+  if (!org) return false;
+  if (organismCapabilities(org).mechanisms) return true;
+  return optedIn && canOptIntoMechanisms(org);
+}
+
+/** Tier 4-6 may be opted into; Tier 1-3 are already on. */
+export function canOptIntoMechanisms(organism: Organism | undefined): boolean {
+  if (!organism) return false;
+  return !organismCapabilities(organism).mechanisms;
+}
+
+/**
+ * Show the advisory banner for anything outside Tier 1. Tier 2-3 run the full
+ * flow but are not clinical species; Tier 4-6 need an opt-in. Tier 1 gets no
+ * banner because there is nothing to caveat.
+ */
+export function needsOrganismBanner(organismId: string): boolean {
+  const org = getOrganism(organismId);
+  return org ? org.tier !== 1 : false;
+}
+
+export function organismBannerMessage(organismId: string): string | null {
+  const org = getOrganism(organismId);
+  if (!org || org.tier === 1) return null;
+  if (org.tier <= 3) {
+    return (
+      `${org.commonName} is a Tier ${org.tier} species. Gene data and the ` +
+      `mechanism flow are both available, but the rulebooks and the ` +
+      `delivery-precedent tables are built on human and clinical-species ` +
+      `evidence — read mechanism rankings as indicative for this organism.`
+    );
+  }
+  return (
+    `${org.commonName} is a Tier ${org.tier} organism. Gene information is ` +
+    `available. The mechanism flow is off by default here because the ` +
+    `rulebooks describe mammalian RNA biology — NMD, ADAR editing, RNase H1, ` +
+    `the spliceosome — which may not apply. You can enable it explicitly if ` +
+    `that is appropriate for your target.`
+  );
 }
 
 export const TIER_LABELS: Record<number, { title: string; subtitle: string }> = {
@@ -91,8 +178,48 @@ export function getOrganism(id: string): Organism | undefined {
   return ORGANISMS.find((o) => o.id === id);
 }
 
+/**
+ * Resolve an organism from whatever identifier is to hand.
+ *
+ * The confirmed-target object carries `organism` as the Ensembl production
+ * species name ("homo_sapiens"), not the UI id ("human"), so a lookup by id
+ * alone silently misses and every capability check falls open.
+ */
+export function resolveOrganism(
+  identifier: string | undefined | null,
+): Organism | undefined {
+  if (!identifier) return undefined;
+  const needle = identifier.trim().toLowerCase();
+  return (
+    ORGANISMS.find((o) => o.id.toLowerCase() === needle) ??
+    ORGANISMS.find((o) => o.ensemblSpecies?.toLowerCase() === needle) ??
+    ORGANISMS.find((o) => o.scientificName.toLowerCase() === needle) ??
+    ORGANISMS.find((o) => o.commonName.toLowerCase() === needle)
+  );
+}
+
 export function organismsByTier(tier: number): Organism[] {
   return ORGANISMS.filter((o) => o.tier === tier);
+}
+
+/** Every tier that has organisms, ascending. For grouped rendering. */
+export function populatedTiers(): number[] {
+  return Array.from(new Set(ORGANISMS.map((o) => o.tier))).sort((a, b) => a - b);
+}
+
+/** Organisms grouped by tier, for a grouped selector. Nothing is filtered out. */
+export function organismsGroupedByTier(): {
+  tier: number;
+  label: { title: string; subtitle: string };
+  mechanismsByDefault: boolean;
+  organisms: Organism[];
+}[] {
+  return populatedTiers().map((tier) => ({
+    tier,
+    label: TIER_LABELS[tier],
+    mechanismsByDefault: defaultCapabilitiesForTier(tier).mechanisms,
+    organisms: organismsByTier(tier),
+  }));
 }
 
 /** Returns true if the organism is Tier 1-3 (Ensembl-based, full enrichment data). */

@@ -15,6 +15,7 @@ import requests
 import RNA
 
 from services.gene_silencing_service import get_target_analysis, _ensembl_get
+from services import real_data_cache as RDC
 
 logger = logging.getLogger(__name__)
 
@@ -269,6 +270,82 @@ def _get_ensembl_cds(gene_symbol: str, organism: str = "homo_sapiens") -> tuple[
     return "", "N/A", "N/A"
 
 
+def _fetch_real_utrs(gene_symbol: str, organism: str = "homo_sapiens") -> dict | None:
+    """Real 5' and 3' UTR sequences for the canonical transcript.
+
+    Ensembl exposes them directly via /sequence/id/{transcript}?type=utr5 and
+    type=utr3, so there is no reason to construct them. Returns None when the
+    lookup cannot answer, which the caller turns into an explicit
+    "unavailable" rather than a substitute.
+    """
+    lookup = _ensembl_get(
+        f"{ENSEMBL_REST}/lookup/symbol/{organism}/{gene_symbol}?expand=1",
+        timeout=10,
+    )
+    if not lookup or not getattr(lookup, "ok", False):
+        return None
+    data = lookup.json()
+    transcript_id = data.get("canonical_transcript") or ""
+    transcript_id = transcript_id.split(".")[0]
+    if not transcript_id:
+        for t in data.get("Transcript", []):
+            if t.get("is_canonical") or t.get("biotype") == "protein_coding":
+                transcript_id = t.get("id", "")
+                break
+    if not transcript_id:
+        return None
+
+    out: dict = {"transcript_id": transcript_id, "assembly": data.get("assembly_name")}
+    for kind, key in (("utr5", "utr5"), ("utr3", "utr3")):
+        resp = _ensembl_get(
+            f"{ENSEMBL_REST}/sequence/id/{transcript_id}?type={kind}",
+            timeout=10,
+        )
+        if resp is not None and getattr(resp, "ok", False):
+            payload = resp.json()
+            seq = ""
+            if isinstance(payload, list) and payload:
+                seq = payload[0].get("seq", "")
+            elif isinstance(payload, dict):
+                seq = payload.get("seq", "")
+            if seq:
+                out[key] = seq.upper()
+    # A transcript with neither UTR annotated is not a usable answer.
+    if not out.get("utr5") and not out.get("utr3"):
+        return None
+    return out
+
+
+def _resolve_transcript_parts(symbol: str, organism: str) -> dict:
+    """Real CDS + UTRs: live, else a real earlier fetch, else unavailable.
+
+    This is the one place the TG08 pipeline is allowed to obtain sequence.
+    There is deliberately no synthesis branch — the previous implementation
+    fell back to `"AUG" + "GCU" * 300` for the CDS and
+    `"GCCACC" + "A" * n` / `"G" * n` for the UTRs, then computed CAI, GC
+    content, folding MFE, U-content and a protein-yield estimate from that
+    padding. Those numbers described the padding, not the gene.
+    """
+    def fetch() -> dict | None:
+        cds, native_length, ref_seq = _get_ensembl_cds(symbol, organism)
+        if not cds:
+            return None
+        parts: dict = {
+            "cds": cds.upper(),
+            "nativeLength": native_length,
+            "refSeq": ref_seq,
+        }
+        utrs = _fetch_real_utrs(symbol, organism)
+        if utrs:
+            parts.update(utrs)
+        return parts
+
+    return RDC.resolve(
+        "transcript_parts", f"{organism}:{symbol}", fetch,
+        source="Ensembl REST", source_version="",
+    )
+
+
 def generate_protein_replacement_candidates(
     target_symbol: str,
     rna_modality: str,
@@ -283,11 +360,32 @@ def generate_protein_replacement_candidates(
     if not symbol:
         raise ValueError("target_symbol is required")
 
-    cds, native_length, ref_seq = _get_ensembl_cds(symbol, organism)
-    if not cds:
-        cds = "AUG" + "GCU" * 300
-        native_length = "N/A"
-        ref_seq = "N/A"
+    resolved = _resolve_transcript_parts(symbol, organism)
+    if resolved["status"] == RDC.UNAVAILABLE:
+        # Explicitly no candidates. Every downstream metric (CAI, GC, MFE,
+        # U-content, yield) is a property of the sequence, so without a real
+        # sequence there is nothing honest to report.
+        return {
+            "targetSymbol": symbol,
+            "status": RDC.UNAVAILABLE,
+            "dataProvenance": resolved,
+            "candidates": [],
+            "message": (
+                f"No real coding sequence is available for {symbol}: the "
+                f"Ensembl lookup did not answer and nothing has been cached "
+                f"or curated for this target. Construct metrics are computed "
+                f"from the sequence, so none can be reported. Retry when the "
+                f"source is reachable, or add a verified entry to "
+                f"data/reference/curated_transcript_parts.tsv."
+            ),
+        }
+
+    parts = resolved["data"]
+    cds = parts["cds"]
+    native_length = parts.get("nativeLength", "N/A")
+    ref_seq = parts.get("refSeq", "N/A")
+    real_utr5 = (parts.get("utr5") or "").upper().replace("T", "U")
+    real_utr3 = (parts.get("utr3") or "").upper().replace("T", "U")
 
     cds_clean = cds.upper().replace("T", "U")
     if cds_clean.startswith("AUG"):
@@ -348,8 +446,17 @@ def generate_protein_replacement_candidates(
 
         for var in variants:
             orf_length = len(optimized_cds)
-            utr5 = "GCCACC" + "A" * (var["five_utr"] - 6)
-            utr3 = "G" * var["three_utr"] if var["three_utr"] > 1 else ""
+            # Real UTRs when the source gave them. The `five_utr`/`three_utr`
+            # numbers on each variant describe the LENGTH a given construct
+            # architecture targets; they are not sequence, and padding them
+            # out to that length would make every sequence-derived metric a
+            # property of the padding.
+            utr5 = real_utr5
+            utr3 = real_utr3
+            utr_source = "ensembl_real" if (real_utr5 or real_utr3) else "absent"
+            # A poly(A) tail is added post-transcriptionally and is genuinely
+            # a run of A of the stated length — that is the actual molecule,
+            # not a stand-in for unknown sequence.
             poly_a = "A" * var["poly_a"]
 
             full_seq = utr5 + optimized_cds + utr3 + poly_a
@@ -371,6 +478,9 @@ def generate_protein_replacement_candidates(
             candidates.append({
                 "rank": rank,
                 "constructId": construct_id,
+                "utrSource": utr_source,
+                "utr5Length": len(utr5),
+                "utr3Length": len(utr3),
                 "modality": {
                     "circrna": "Circular RNA (circRNA)",
                     "linear": "Linear IVT mRNA",

@@ -19,7 +19,12 @@ import DiseaseMatchIndicator from "@/components/DiseaseMatchIndicator";
 import { GeneTargetObject } from "@/types/gene";
 import { fetchGene } from "@/lib/api";
 import { saveReport } from "@/lib/auth";
-import { getOrganism } from "@/lib/organisms";
+import {
+  getOrganism,
+  supportsMechanisms,
+  canOptIntoMechanisms,
+} from "@/lib/organisms";
+import OrganismCapabilityBanner from "@/components/OrganismCapabilityBanner";
 import { findViralGene } from "@/lib/virusGenes";
 import { validateGeneSymbol, type GeneSuggestion } from "@/lib/geneSearchApi";
 import { formatGeneSymbol } from "../shared/geneFormat";
@@ -158,6 +163,9 @@ export default function NewProjectPage() {
   const router = useRouter();
   const searchParams = useClientSearchParams();
   const [organism, setOrganism] = useState("human");
+  // Tier 4-6 are opt-in rather than blocked. Reset the opt-in whenever the
+  // organism changes so it can never carry over silently to a new target.
+  const [mechanismsOptedIn, setMechanismsOptedIn] = useState(false);
   const [diseaseName, setDiseaseName] = useState("");
   const [geneSymbol, setGeneSymbol] = useState("");
   const [gene, setGene] = useState<GeneTargetObject | null>(null);
@@ -483,10 +491,14 @@ export default function NewProjectPage() {
       <div className="flex min-h-screen flex-1 flex-col">
         <Topbar />
         <main className="flex-1 space-y-4 px-4 py-4 lg:px-[18px]">
+          <OrganismCapabilityBanner organismId={organism} />
           {(gene || loading) && (
             <BasicInfoForm
               organism={organism}
-              setOrganism={setOrganism}
+              setOrganism={(next: string) => {
+                setOrganism(next);
+                setMechanismsOptedIn(false);
+              }}
               diseaseName={diseaseName}
               setDiseaseName={setDiseaseName}
               geneSymbol={geneSymbol}
@@ -733,6 +745,13 @@ export default function NewProjectPage() {
           <FooterBar
             onClear={handleClearAll}
             onConfirm={handleConfirm}
+            organismSupportsMechanisms={supportsMechanisms(
+              organism,
+              mechanismsOptedIn,
+            )}
+            canOptIntoMechanisms={canOptIntoMechanisms(getOrganism(organism))}
+            mechanismsOptedIn={mechanismsOptedIn}
+            onToggleMechanismOptIn={setMechanismsOptedIn}
           />
         )}
       </div>

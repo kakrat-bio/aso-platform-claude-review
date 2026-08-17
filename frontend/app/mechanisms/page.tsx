@@ -30,6 +30,13 @@ import {
   getGoalLabel,
 } from "@/lib/mechanismApi";
 import { fetchRnaEditingClinVarVariants } from "@/lib/rnaEditingApi";
+import {
+  resolveOrganism,
+  organismCapabilities,
+  canOptIntoMechanisms,
+  organismBannerMessage,
+} from "@/lib/organisms";
+import OrganismCapabilityBanner from "@/components/OrganismCapabilityBanner";
 import { ClinVarVariant } from "@/types/geneSilencing";
 import RnaEditingVariantSelector from "@/components/RnaEditingVariantSelector";
 import { saveReport } from "@/lib/auth";
@@ -810,6 +817,51 @@ export default function MechanismSelectionPage() {
     if (selectedGoal === "TG09") return !tg09StructuralClass || !tg09TargetType || !tg09Scaffold || !tg09ChemStabilization || !tg09KdGoal;
     if (selectedGoal === "TG08") return true;
     return true;
+  }
+
+  const mechanismOrganism = resolveOrganism(gene?.organism);
+  const mechanismsEnabledHere = mechanismOrganism
+    ? organismCapabilities(mechanismOrganism).mechanisms
+    : true;
+
+  // Reaching here for a Tier 4-6 organism means a direct URL or stale state:
+  // Confirm & Proceed is not offered without the opt-in. Say so plainly and
+  // offer the way back rather than redirecting, which would hide what
+  // happened.
+  if (gene && mechanismOrganism && !mechanismsEnabledHere) {
+    return (
+      <div className="flex min-h-screen bg-[#F8FAFC]">
+        <Sidebar />
+        <div className="flex min-h-screen flex-1 flex-col">
+          <Topbar />
+          <main className="flex flex-1 items-center justify-center px-6">
+            <Card className="max-w-lg p-8">
+              <AlertCircle className="mx-auto h-8 w-8 text-amber-400" />
+              <p className="mt-3 text-center text-[14px] font-medium text-slate-700">
+                Mechanism analysis is not enabled for {mechanismOrganism.commonName}
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-slate-600">
+                {organismBannerMessage(mechanismOrganism.id)}
+              </p>
+              {canOptIntoMechanisms(mechanismOrganism) && (
+                <p className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-snug text-amber-900">
+                  To proceed anyway, go back to Basic Information and tick
+                  &ldquo;Enable mechanism analysis anyway&rdquo; before
+                  confirming the target.
+                </p>
+              )}
+              <button
+                onClick={() => router.push("/")}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-[13px] font-medium text-white"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back to Basic Information
+              </button>
+            </Card>
+          </main>
+        </div>
+      </div>
+    );
   }
 
   if (!gene) {

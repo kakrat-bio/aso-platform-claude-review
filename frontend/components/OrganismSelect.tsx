@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Search, Dna } from "lucide-react";
-import { ORGANISMS, Organism, getOrganism } from "@/lib/organisms";
+import {
+  ORGANISMS,
+  Organism,
+  getOrganism,
+  TIER_LABELS,
+  defaultCapabilitiesForTier,
+  organismCapabilities,
+} from "@/lib/organisms";
 
 interface Props {
   value: string;
@@ -89,8 +96,27 @@ export default function OrganismSelect({ value, onChange }: Props) {
 
               return (
                 <div key={tier} className={`${TIER_COLORS[tier]}`}>
-                  <div className="sticky top-0 z-10 px-4 py-1.5 font-bold uppercase tracking-widest text-[9px] text-slate-600 bg-black/5">
-                    Tier {tier}
+                  {/*
+                    Nothing is filtered out by tier. The header states what
+                    the tier gives you so the grouping carries the meaning,
+                    rather than an organism silently behaving differently.
+                  */}
+                  <div className="sticky top-0 z-10 bg-black/5 px-4 py-1.5">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-bold uppercase tracking-widest text-[9px] text-slate-600">
+                        Tier {tier} — {TIER_LABELS[tier]?.title}
+                      </span>
+                      <span className="shrink-0 text-[9px] font-medium uppercase tracking-wider text-slate-500">
+                        {defaultCapabilitiesForTier(tier).mechanisms
+                          ? "Gene info + mechanisms"
+                          : "Gene info · mechanisms opt-in"}
+                      </span>
+                    </div>
+                    {TIER_LABELS[tier]?.subtitle && (
+                      <p className="mt-0.5 text-[9.5px] leading-tight text-slate-500">
+                        {TIER_LABELS[tier].subtitle}
+                      </p>
+                    )}
                   </div>
                   <div className="p-1">
                     {items.map((o) => (
@@ -144,11 +170,21 @@ function OrganismRow({
         {organism.commonName}{" "}
         <span className="italic text-slate-500/70 ml-1">({organism.scientificName})</span>
       </span>
-      {organism.status === "curated" ? (
-        <span className="ml-2 shrink-0 rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-700">
-          Curated
-        </span>
-      ) : null}
+      <span className="ml-2 flex shrink-0 items-center gap-1">
+        {!organismCapabilities(organism).mechanisms && (
+          <span
+            title="Gene information is available. Mechanism analysis is off by default for this tier and can be enabled explicitly."
+            className="rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-700"
+          >
+            Gene Info
+          </span>
+        )}
+        {organism.status === "curated" && (
+          <span className="rounded-full bg-black/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-700">
+            Curated
+          </span>
+        )}
+      </span>
     </button>
   );
 }

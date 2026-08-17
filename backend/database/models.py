@@ -200,3 +200,32 @@ class GeneLookupCache(Base):
     __table_args__ = (
         UniqueConstraint("organism", "gene_symbol", name="uq_gene_lookup_cache"),
     )
+
+
+class RealDataCache(Base):
+    """Last-known-good real data from an external source, keyed by namespace.
+
+    Backs services/real_data_cache.py. The point is that an outage degrades to
+    REAL DATA FETCHED EARLIER, or to an explicit "unavailable" — never to a
+    synthesised substitute, which is indistinguishable from a measurement once
+    it reaches the UI.
+
+    `origin` separates a replayed live fetch from a hand-verified curated row;
+    curated rows are never overwritten by a live fetch.
+    """
+
+    __tablename__ = "real_data_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    namespace = Column(String(64), nullable=False, index=True)
+    cache_key = Column(String(200), nullable=False, index=True)
+    payload = Column(Text, nullable=False, default="{}")
+    origin = Column(String(16), nullable=False, default="live")
+    source = Column(String(200), nullable=False, default="")
+    source_version = Column(String(64), nullable=False, default="")
+    created_at = Column(Float, nullable=False, default=time.time)
+    updated_at = Column(Float, nullable=False, default=time.time)
+
+    __table_args__ = (
+        UniqueConstraint("namespace", "cache_key", name="uq_real_data_cache"),
+    )
