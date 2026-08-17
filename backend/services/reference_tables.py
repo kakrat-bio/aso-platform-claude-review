@@ -39,6 +39,10 @@ TABLES: dict[str, str] = {
     "rbp_repressor_sites": "gene_symbol",
     "polyadenylation_sites": "gene_symbol",
     "apa_therapeutic_benefit": "gene_symbol",
+    "alt_promoters": "gene_symbol",
+    "alt_promoter_benefit": "gene_symbol",
+    "intron_retention_potential": "gene_symbol",
+    "intron_retention_benefit": "gene_symbol",
 }
 
 _cache: dict[str, dict[str, list[dict]]] = {}

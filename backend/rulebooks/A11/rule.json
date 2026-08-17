@@ -4,7 +4,8 @@
   "name": "Alternative Polyadenylation (APA) Modulation",
   "category": "RNA processing modulation",
   "therapeuticGoalIds": [
-    "TG04"
+    "TG04",
+    "TG07"
   ],
   "therapeuticGoalDescription": "Modify polyadenylation site selection to restore normal transcript processing or alter mRNA stability, localization, or protein expression.",
   "molecularDefect": "Diseases involving aberrant alternative polyadenylation, premature poly(A) site usage, or dysregulated 3′ end processing.",
@@ -56,7 +57,8 @@
   "arbitration": {
     "scoringMode": "scored",
     "goalTags": [
-      "TG04"
+      "TG04",
+      "TG07"
     ],
     "primaryGoal": "TG04",
     "defectClasses": [

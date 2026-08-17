@@ -1,0 +1,76 @@
+{
+  "id": "A32",
+  "enabled": true,
+  "name": "Alternative Promoter Switching",
+  "category": "Transcription start site selection",
+  "therapeuticGoalIds": [
+    "TG07"
+  ],
+  "therapeuticGoalDescription": "Shift transcription start site selection to favor production of a therapeutically desired transcript isoform with a different 5' end.",
+  "molecularDefect": "Diseases where the ratio of protein isoforms generated from alternative promoters is pathogenic, or where a specific promoter-derived isoform is therapeutic.",
+  "diseaseMechanism": "A gene has two or more alternative promoters that produce transcripts with different first exons, 5' UTRs, and potentially different N-terminal coding sequences. An ASO targeting the promoter-proximal region or first exon of the unwanted promoter blocks transcription initiation or early elongation from that TSS, shifting isoform balance toward the desired promoter-derived transcript.",
+  "suitableVariantTypes": "Diseases involving pathogenic promoter usage; cancer-associated promoter switching; tissue-specific isoform imbalance; developmental disorders with incorrect promoter selection.",
+  "typicalDiseases": "Cancer (aberrant promoter usage); developmental disorders (incorrect promoter selection); tissue-specific isoform diseases (experimental). No established clinical programs.",
+  "rnaTargetRegion": "Promoter-proximal RNA; first exon of the unwanted isoform; DNA/RNA hybrid regions near the transcription start site; paused RNA polymerase II region.",
+  "transcriptRequirement": "Gene must have validated alternative promoters producing functionally distinct isoforms. The unwanted promoter-derived transcript must be targetable.",
+  "asoChemistry": "RNase H-independent steric-blocking ASOs (PMO, 2'-MOE, morpholino) to block transcription without degrading the target. RNase H-active chemistries may also work if transcript degradation is acceptable.",
+  "typicalLength": "Approximately 20-30 nucleotides.",
+  "designRules": "Identify alternative promoters via CAGE data or promoter databases; validate which promoter-derived isoform is therapeutic; design ASOs targeting the unwanted promoter-proximal region; validate isoform switching by RT-qPCR.",
+  "secondaryStructureRequirement": "Accessible single-stranded regions near the TSS are preferred. Promoter DNA:RNA hybrids may require specific chemistry.",
+  "offTargetConsiderations": "Potential disruption of transcription from other genes sharing promoter homology; evaluate genome-wide promoter sequence similarity.",
+  "advantages": "Can shift isoform ratios without altering genomic sequence; leverages natural promoter diversity; potentially durable effect if transcriptional memory is established.",
+  "limitations": "Limited therapeutic validation; requires detailed promoter characterization; ASO access to transcriptionally active chromatin may be limited; effect may be transient.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "None identified. Preclinical proof-of-concept only.",
+  "evidenceLevel": {
+    "rating": "Low",
+    "note": "Mechanistically plausible based on transcription biology but minimal direct ASO therapeutic evidence."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. Mikkelsen et al. (2007); Sandelin et al. (2007); Habegger et al. (2011).",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "Mikkelsen TS et al. Genome-wide maps of chromatin state in pluripotent and lineage-committed cells. Nature (2007)",
+      "doi": "10.1038/nature06008",
+      "usedFor": "CAGE-based promoter discovery and alternative TSS mapping.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    },
+    {
+      "refId": "R2",
+      "paper": "Sandelin A et al. Mammalian survey of 5' transcriptional start sites and promoters. NAR (2007)",
+      "doi": "10.1093/nar/gkl994",
+      "usedFor": "Alternative promoter annotation and tissue-specific usage.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    },
+    {
+      "refId": "R3",
+      "paper": "Habegger L et al. RIKEN FANTOM5 project: comprehensive mapping of alternative promoters across human tissues. Genome Research (2011)",
+      "doi": "10.1101/gr.110841.110",
+      "usedFor": "Tissue-specific alternative promoter atlas.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "scored",
+    "goalTags": [
+      "TG07"
+    ],
+    "primaryGoal": "TG07",
+    "defectClasses": [
+      "alt_promoter_dysregulation"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [
+      "F14a",
+      "F14b"
+    ],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": true
+  }
+}

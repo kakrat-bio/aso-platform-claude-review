@@ -1,0 +1,45 @@
+{
+  "id": "A29",
+  "enabled": true,
+  "name": "IRES-Targeted Translation Modulation",
+  "category": "Translation regulation / IRES modulation",
+  "therapeuticGoalIds": [
+    "TG06"
+  ],
+  "therapeuticGoalDescription": "Increase or decrease protein synthesis by regulating mRNA translation without altering RNA abundance.",
+  "molecularDefect": "Diseases in which cap-independent translation driven by an internal ribosome entry site sustains expression of a pathogenic protein, or in which IRES-driven translation is aberrantly active.",
+  "suitableVariantTypes": "Not variant-driven. Applies where an IRES element in the target transcript drives cap-independent translation under stress, in cancer, or during viral infection.",
+  "rnaTargetRegion": "Structured IRES domains, typically domain IV/V of the 5' UTR.",
+  "transcriptRequirement": "Target transcript containing a validated or predicted internal ribosome entry site.",
+  "asoChemistry": "RNase H-independent steric-blocking ASOs: PMO, 2'-MOE full-phosphorothioate, LNA/DNA mixmers",
+  "typicalLength": "Approximately 18-30 nt for steric-blocking ASOs.",
+  "designRules": "Steric occupancy only - no RNase H recruitment. IRES activity is context-dependent; efficiency varies by cell type and stress conditions; no clinical precedent.",
+  "advantages": "Targets cap-independent translation active in stress, cancer, and viral infection; structurally well-characterized.",
+  "limitations": "IRES activity is context-dependent; efficiency varies by cell type and stress conditions; no clinical precedent.",
+  "offTargetConsiderations": "Must distinguish viral from cellular IRES; off-target effects on other structured RNA elements possible.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "None identified; preclinical proof-of-concept in HCV IRES and cellular IRES (XIAP, Bcl-2).",
+  "evidenceLevel": {
+    "rating": "Low-Moderate",
+    "note": "Well-characterized structural biology; preclinical only; no approved therapy."
+  },
+  "references": [],
+  "arbitration": {
+    "scoringMode": "scored",
+    "designAvailable": true,
+    "goalTags": [
+      "TG06"
+    ],
+    "primaryGoal": "TG06",
+    "defectClasses": [
+      "ires_mediated_translation"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "discriminatingFeatures": [],
+    "forbiddenFeatures": [],
+    "note": "IRES domains have conserved secondary structure; ASO binding to domain IV/V disrupts ITAF recruitment."
+  }
+}

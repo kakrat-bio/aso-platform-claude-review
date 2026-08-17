@@ -248,6 +248,30 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
         "wired": False,
         "blocks": ["A11"],
     },
+    "F14a": {
+        "label": "Alternative promoter exists for this gene",
+        "intendedSource": "CAGE / FANTOM promoter atlas (MUST VERIFY)",
+        "wired": False,
+        "blocks": ["A32"],
+    },
+    "F14b": {
+        "label": "Shifting promoter usage is therapeutically beneficial",
+        "intendedSource": "per-gene disease-specific curation",
+        "wired": False,
+        "blocks": ["A32"],
+    },
+    "F15a": {
+        "label": "Intron with therapeutic retention potential exists",
+        "intendedSource": "splice-site conservation + NMD context (MUST VERIFY)",
+        "wired": False,
+        "blocks": ["A33"],
+    },
+    "F15b": {
+        "label": "Retention of this intron is therapeutically beneficial",
+        "intendedSource": "per-gene disease-specific curation",
+        "wired": False,
+        "blocks": ["A33"],
+    },
     # --- modality-flag features (NOT part of the scored family) -------------
     # These three feed the qualitative modality flag and nothing else. They
     # never enter an applicability interval and never contribute to a score.
@@ -831,6 +855,90 @@ def _apa_benefit_from_curation(ctx: FeatureContext) -> Feature | None:
     )
 
 
+def _alt_promoter_from_table(ctx: FeatureContext) -> Feature | None:
+    """F14a — does this gene have an annotated alternative promoter?"""
+    row = RT.row_for("alt_promoters", ctx.gene_symbol)
+    if not row:
+        return None
+    try:
+        count = int((row.get("alternative_promoter_count") or "").strip())
+    except (TypeError, ValueError):
+        return None
+    return Feature(
+        id="F14a",
+        state=PRESENT if count > 0 else ABSENT,
+        probability=0.9 if count > 0 else 0.05,
+        provenance=ANNOTATION,
+        source=RT.provenance_of(row) or "alternative promoter atlas",
+        detail=(
+            f"{count} alternative promoter(s) annotated for {ctx.gene_symbol}. "
+            "Presence alone is not sufficient for A32 — many genes have them."
+        ),
+    )
+
+
+def _alt_promoter_benefit(ctx: FeatureContext) -> Feature | None:
+    """F14b — is shifting promoter usage therapeutic in this gene?"""
+    row = RT.row_for("alt_promoter_benefit", ctx.gene_symbol)
+    if not row:
+        return None
+    return Feature(
+        id="F14b",
+        state=PRESENT,
+        probability=0.9,
+        provenance=CONFIRMED,
+        source=RT.provenance_of(row) or "curated promoter-switch benefit list",
+        detail=(
+            (row.get("evidence_summary")
+             or f"Promoter switching curated as therapeutic in {ctx.gene_symbol}")
+            + (f" (PMID {row.get('pmid')})" if row.get("pmid") else "")
+        ),
+    )
+
+
+def _intron_retention_from_table(ctx: FeatureContext) -> Feature | None:
+    """F15a — is there an intron whose retention could be therapeutic?"""
+    row = RT.row_for("intron_retention_potential", ctx.gene_symbol)
+    if not row:
+        return None
+    target = (row.get("target_intron") or "").strip()
+    return Feature(
+        id="F15a",
+        state=PRESENT if target else ABSENT,
+        probability=0.9 if target else 0.05,
+        provenance=ANNOTATION,
+        source=RT.provenance_of(row) or "intron retention potential table",
+        call=target or None,
+        detail=(
+            f"Intron {target} annotated as a retention candidate in "
+            f"{ctx.gene_symbol}"
+            + (f"; mechanism {row.get('retention_mechanism')}"
+               if row.get("retention_mechanism") else "")
+            if target else
+            f"No retention-candidate intron annotated for {ctx.gene_symbol}"
+        ),
+    )
+
+
+def _intron_retention_benefit(ctx: FeatureContext) -> Feature | None:
+    """F15b — is retaining that intron therapeutic in this gene?"""
+    row = RT.row_for("intron_retention_benefit", ctx.gene_symbol)
+    if not row:
+        return None
+    return Feature(
+        id="F15b",
+        state=PRESENT,
+        probability=0.9,
+        provenance=CONFIRMED,
+        source=RT.provenance_of(row) or "curated intron-retention benefit list",
+        detail=(
+            (row.get("evidence_summary")
+             or f"Intron retention curated as therapeutic in {ctx.gene_symbol}")
+            + (f" (PMID {row.get('pmid')})" if row.get("pmid") else "")
+        ),
+    )
+
+
 def _residual_transcript(ctx: FeatureContext) -> Feature | None:
     """P2 — is there endogenous transcript left for a boosting mechanism?
 
@@ -1073,6 +1181,10 @@ _LADDERS: dict[str, list[Callable[[FeatureContext], Feature | None]]] = {
     "F11": [_rbp_site_from_curation],
     "F13a": [_apa_site_from_table],
     "F13b": [_apa_benefit_from_curation],
+    "F14a": [_alt_promoter_from_table],
+    "F14b": [_alt_promoter_benefit],
+    "F15a": [_intron_retention_from_table],
+    "F15b": [_intron_retention_benefit],
     "F12": [_repeat_from_catalogue, _from_repeat_text],
     # Modality-flag family. Unresolved simply withholds the flag.
     "P2": [_residual_transcript, _expression_from_table],
@@ -1094,6 +1206,25 @@ _NO_SOURCE_REASON = {
     "F13a": (
         "No polyadenylation-site table has been populated, so whether this "
         "transcript has an alternative poly(A) site is not established."
+    ),
+    "F14a": (
+        "No alternative-promoter table has been populated, so whether this "
+        "gene has one is not established."
+    ),
+    "F14b": (
+        "Whether shifting promoter usage is therapeutically useful in this "
+        "gene is a disease-specific judgement and has not been curated. A32 "
+        "halts rather than guessing — alternative promoters are common, so "
+        "their presence alone would fire it almost everywhere."
+    ),
+    "F15a": (
+        "No intron-retention-potential table has been populated, so whether "
+        "this gene has a retainable intron is not established."
+    ),
+    "F15b": (
+        "Whether retaining that intron is therapeutically useful in this gene "
+        "is a disease-specific judgement and has not been curated. A33 halts "
+        "rather than guessing."
     ),
     "F13b": (
         "Whether shifting polyadenylation usage is therapeutically useful in "

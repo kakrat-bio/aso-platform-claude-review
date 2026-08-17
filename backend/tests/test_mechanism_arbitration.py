@@ -62,15 +62,17 @@ def test_goal_filter_narrows_the_result_but_not_the_scoring():
 
 
 def test_every_goal_route_agrees_with_the_unified_pass():
-    """TG04 and TG07 rank the same mechanisms; they must not disagree.
+    """Mechanisms shared by TG04 and TG07 must score identically.
 
-    This is the property that was impossible when each goal had its own
-    scoring code: TG07's mechanism set is a strict subset of TG04's, so two
-    scorers over it could only ever diverge.
+    TG07 is no longer a strict subset of TG04 — it has A32 and A33 of its own,
+    and A11 is dual-tagged — but A7-A11 appear under both. The property that
+    matters is unchanged: a mechanism cannot score differently depending on
+    which page asked, because both routes filter one shared pass rather than
+    running their own scorer.
     """
     processing = M.rank_rna_processing_mechanisms(
         "exon_skipping_mutation", None, None, None)
-    isoform = M.filter_isoform_engineering("exon_skipping")
+    isoform = M.rank_isoform_engineering_mechanisms("exon_skipping")
 
     shared = {r["id"] for r in processing} & {r["id"] for r in isoform}
     assert shared, "TG07 should overlap TG04"
@@ -272,8 +274,11 @@ def test_flagged_mechanisms_never_enter_the_ranking():
 def test_no_mechanism_was_deleted():
     """Every rulebook still resolves, including the flagged and halted ones."""
     ids = A.all_mechanism_ids()
-    assert len(ids) == 27
+    # 27 originals + A29/A30/A31 (TG06 restoration) + A32/A33 (TG07).
+    assert len(ids) == 32
     assert "A22" not in ids, "A22 has never existed; see the implementation notes"
+    for restored in ("A29", "A30", "A31", "A32", "A33"):
+        assert restored in ids
     for mid in ids:
         assert A.load_rule(mid)["arbitration"], mid
 

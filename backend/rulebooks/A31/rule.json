@@ -1,0 +1,45 @@
+{
+  "id": "A31",
+  "enabled": true,
+  "name": "Poly(A) Tail / PABP Competition",
+  "category": "Translation regulation / mRNA stability",
+  "therapeuticGoalIds": [
+    "TG06"
+  ],
+  "therapeuticGoalDescription": "Increase or decrease protein synthesis by regulating mRNA translation without altering RNA abundance.",
+  "molecularDefect": "Diseases in which poly(A)-binding protein association with the target transcript sustains translation and stability that is therapeutically undesirable.",
+  "suitableVariantTypes": "Not variant-driven. Applies where modulating PABP association with the poly(A) tail changes translation efficiency or transcript stability beneficially.",
+  "rnaTargetRegion": "The poly(A) site and immediately flanking 3' UTR sequence.",
+  "transcriptRequirement": "Target transcript with a mapped poly(A) site and sufficient flanking 3' UTR sequence for selective targeting.",
+  "asoChemistry": "RNase H-independent steric-blocking ASOs: PMO, 2'-MOE full-phosphorothioate, LNA/DNA mixmers",
+  "typicalLength": "Approximately 18-30 nt for steric-blocking ASOs.",
+  "designRules": "Steric occupancy only - no RNase H recruitment. PABP binding is distributed across poly(A) tail; competitive ASO must be precisely positioned near poly(A) site.",
+  "advantages": "Modulates both translation efficiency and mRNA stability simultaneously; targets a well-characterized protein-RNA interface.",
+  "limitations": "PABP binding is distributed across poly(A) tail; competitive ASO must be precisely positioned near poly(A) site.",
+  "offTargetConsiderations": "Many mRNAs share poly(A) tail architecture; selectivity depends on flanking 3' UTR sequence specificity.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "None identified; proof-of-concept in mRNA stability assays.",
+  "evidenceLevel": {
+    "rating": "Low-Moderate",
+    "note": "Mechanistic basis is clear; preclinical only; no approved therapy."
+  },
+  "references": [],
+  "arbitration": {
+    "scoringMode": "scored",
+    "designAvailable": true,
+    "goalTags": [
+      "TG06"
+    ],
+    "primaryGoal": "TG06",
+    "defectClasses": [
+      "pabp_competition_defect"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "discriminatingFeatures": [],
+    "forbiddenFeatures": [],
+    "note": "Distinct from A11 (APA modulation) which targets poly(A) site selection via splicing; A31 targets PABP binding directly for translation/stability effects."
+  }
+}

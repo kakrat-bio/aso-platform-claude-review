@@ -1,0 +1,84 @@
+{
+  "id": "A33",
+  "enabled": true,
+  "name": "Targeted Intron Retention",
+  "category": "Splice modulation",
+  "therapeuticGoalIds": [
+    "TG07"
+  ],
+  "therapeuticGoalDescription": "Force retention of a specific intron to generate a therapeutically beneficial transcript isoform — either a regulatory non-coding RNA, a transcript subject to nonsense-mediated decay (NMD), or a transcript encoding a micropeptide from the retained intron.",
+  "molecularDefect": "Diseases where targeted NMD of a toxic transcript is therapeutic, or where a retained intron encodes a functional micropeptide or regulatory RNA.",
+  "diseaseMechanism": "An ASO blocks a splice donor or splice acceptor site (or an intronic splicing enhancer) of a specific intron, preventing its removal during splicing. The retained intron either (a) introduces a premature termination codon triggering NMD, (b) encodes a functional micropeptide, or (c) creates a regulatory non-coding RNA that modulates gene expression.",
+  "suitableVariantTypes": "Gain-of-function variants where NMD of the toxic transcript is therapeutic; diseases amenable to micropeptide-based therapy; cancers where intron-retained transcripts have tumor-suppressive function.",
+  "typicalDiseases": "Experimental: gain-of-function disorders amenable to NMD (preclinical); cancer (intron-retained tumor suppressor transcripts); micropeptide-encoding introns (emerging biology, no clinical programs).",
+  "rnaTargetRegion": "Splice donor site (5' end of intron); splice acceptor site (3' end of intron); intronic splicing enhancers; branch point sequence.",
+  "transcriptRequirement": "Gene must have a functionally characterized intron where retention produces a therapeutic outcome (NMD, micropeptide, or regulatory RNA).",
+  "asoChemistry": "RNase H-inactive steric-blocking ASOs (PMO, 2'-MOE, morpholino) to block splice site recognition without degrading the pre-mRNA.",
+  "typicalLength": "Approximately 20-25 nucleotides.",
+  "designRules": "Identify targetable introns via splice site prediction; validate intron retention consequences (NMD vs. micropeptide vs. regulatory RNA); design ASOs targeting splice donor or acceptor; validate by RT-PCR and RNA-seq.",
+  "secondaryStructureRequirement": "Accessible splice site regions within pre-mRNA; intronic secondary structure may influence retention efficiency.",
+  "offTargetConsiderations": "Potential unintended retention of introns in partially complementary transcripts; genome-wide splice site specificity analysis required.",
+  "advantages": "Leverages natural NMD pathway for gene knockdown without transcript degradation by ASO; can generate micropeptides not encoded by canonical ORFs; reversible and tunable.",
+  "limitations": "Requires detailed intron characterization; NMD efficiency varies by transcript and cell type; micropeptide biology is emerging; limited therapeutic validation.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "None identified. Preclinical and proof-of-concept studies only.",
+  "evidenceLevel": {
+    "rating": "Low",
+    "note": "Strong mechanistic rationale from NMD and micropeptide biology, but no ASO-based therapeutic programs."
+  },
+  "referencesSummary": "UNVERIFIED - see per-reference verificationNote. Lykke-Andersen & Jensen (2015); Smith & Proudfoot (2008); Bhatt et al. (2012); D'Lima et al. (2017).",
+  "references": [
+    {
+      "refId": "R1",
+      "paper": "Lykke-Andersen S, Jensen TH. Nonsense-mediated mRNA decay: an intricate machine that recognizes transcript abnormalities. Biochem J (2015)",
+      "doi": "10.1042/BJ20141531",
+      "usedFor": "NMD mechanism and substrate recognition.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    },
+    {
+      "refId": "R2",
+      "paper": "Smith CWJ, Proudfoot NJ. Splicing and processing of pre-mRNA. Handbook of Cell Biology (2008)",
+      "doi": "Review",
+      "usedFor": "Splice site biology and intron retention mechanisms.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    },
+    {
+      "refId": "R3",
+      "paper": "Bhatt DM et al. Transcriptome-wide analysis of alternative splicing and processing. RNA (2012)",
+      "doi": "10.1261/rna.031260.112",
+      "usedFor": "Intron retention as a regulated process.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    },
+    {
+      "refId": "R4",
+      "paper": "D'Lima NG et al. A human micropeptide encoded in a retained intron. Cell Reports (2017)",
+      "doi": "10.1016/j.celrep.2017.05.074",
+      "usedFor": "Micropeptides from retained introns as therapeutic targets.",
+      "verified": false,
+      "verificationNote": "MUST VERIFY: supplied in the implementation spec, not checked against the literature. Confirm author list, year, journal and DOI before this rulebook is cited anywhere."
+    }
+  ],
+  "arbitration": {
+    "scoringMode": "scored",
+    "goalTags": [
+      "TG07"
+    ],
+    "primaryGoal": "TG07",
+    "defectClasses": [
+      "intron_retention_defect"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": true,
+    "requiredFeatures": [
+      "F15a",
+      "F15b"
+    ],
+    "forbiddenFeatures": [],
+    "discriminatingFeatures": [],
+    "designAvailable": true
+  }
+}

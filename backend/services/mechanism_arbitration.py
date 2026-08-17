@@ -164,6 +164,30 @@ MOLECULAR_DEFECTS: dict[str, str] = {
         "Coding-region mutation where replacing part of the transcript is "
         "preferable to degradation or exon skipping"
     ),
+    # TG06 restoration (organism-tier docx). Three defect classes for the
+    # three new translational mechanisms.
+    "ires_mediated_translation": (
+        "Cap-independent translation driven by internal ribosome entry site (IRES)"
+    ),
+    "kozak_context_dysregulation": (
+        "Aberrant Kozak consensus sequence affecting translation initiation "
+        "efficiency"
+    ),
+    "pabp_competition_defect": (
+        "Disrupted poly(A)-binding protein interaction affecting translation "
+        "and stability"
+    ),
+    # TG07 restoration (organism-tier docx). These make TG07 biologically
+    # distinct from TG04's "fix broken splicing" framing rather than a subset
+    # of it.
+    "alt_promoter_dysregulation": (
+        "Pathogenic balance of protein isoforms generated from alternative "
+        "promoters"
+    ),
+    "intron_retention_defect": (
+        "Disease in which forcing retention of a specific intron is "
+        "therapeutic (NMD of a toxic transcript, micropeptide, or regulatory RNA)"
+    ),
     # from A27's own molecularDefect field. TG06 gated on a (goal, element)
     # pair rather than a defect, so this term had no home in the old
     # per-goal vocabularies and had to be added when they were unioned.
@@ -286,18 +310,6 @@ THERAPEUTIC_GOALS_PATH = os.path.join(RULEBOOKS_DIR, "therapeutic-goals.json")
 # Goals that are no longer scoring partitions. Their mechanisms all remain
 # available; the goal survives only as a display grouping (plan §3.1–§3.4).
 RETIRED_AS_SCORING_PARTITION = {
-    "TG06": (
-        "Retired as a scoring partition: three of its four mechanisms (A2, A5, "
-        "A6) belong to gene silencing or gene activation, and the fourth (A27) "
-        "is research-stage. All four remain available and carry a "
-        "'translational regulation' display tag."
-    ),
-    "TG07": (
-        "Retired as a scoring partition: every TG07 mechanism (A7, A8, A9, A10) "
-        "is also a TG04 mechanism, so two scoring paths over an identical "
-        "mechanism set could only ever diverge. 'Isoform engineering' survives "
-        "as a display tag."
-    ),
     "TG08": (
         "Flag only, not scored: there is no approved mRNA protein replacement "
         "therapy and no approved circRNA therapy, so an applicability figure "

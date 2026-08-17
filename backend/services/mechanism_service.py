@@ -23,12 +23,16 @@ Deleted here, and why:
       from the rulebook they were derived from. They now live in each
       mechanism's rule.json under `arbitration`.
 
-  rank_translational_regulation_mechanisms  (TG06)
   rank_isoform_engineering_mechanisms       (TG07)
-      Both scored mechanism sets that belong to other goals — TG07's set is a
-      strict subset of TG04's. Two code paths over an identical mechanism set
-      can only ever diverge. Both goals survive as display tags; all their
-      mechanisms remain available.
+      Scored a mechanism set that was a strict subset of TG04's, so two code
+      paths over an identical set could only diverge. TG07 survives as a
+      display tag; all its mechanisms remain available.
+
+TG06 was retired here too and has since been RESTORED as a scored goal with
+seven mechanisms (A2, A5, A6, A27 plus A29 IRES, A30 Kozak, A31 PABP). It is
+still served by a filter over the single shared pass rather than by a scorer
+of its own — that property is what the retirement was protecting, and it is
+kept.
 
   generate_rna_engineering_candidates and its helpers  (TG09)
       Generated sequences, melting temperatures, folding free energies and
@@ -169,6 +173,10 @@ TRANSLATIONAL_TARGET_ELEMENTS = {
     "3p_utr_mirna": "3' UTR miRNA Seed Site",
     "uorf": "5' UTR uORF / Upstream AUG",
     "structured_element": "IRES / G-quadruplex / Riboswitch",
+    # TG06 restoration — the three elements the new mechanisms target.
+    "ires_element": "IRES Domain (cap-independent initiation)",
+    "kozak_consensus": "Kozak Consensus (initiator AUG context)",
+    "polya_site": "Poly(A) Site / PABP Interface",
 }
 
 TRANSLATIONAL_CHEMISTRIES = {
@@ -177,28 +185,48 @@ TRANSLATIONAL_CHEMISTRIES = {
     "lna_dna_mixmer": "LNA / DNA Mixmer (Steric Blockade)",
 }
 
-# TG06 is no longer a scoring partition, so this maps a (goal, element) pair
-# onto the unified defect vocabulary instead of onto a private mechanism list.
+# TG06 is a scored partition again, but the mapping stays on the unified
+# defect vocabulary rather than reverting to a private mechanism list — the
+# (goal, element) pair is a form convenience, not a second source of truth
+# about which mechanism serves which defect. That still lives in each
+# rule.json.
 TRANSLATIONAL_ELEMENT_DEFECT: dict[tuple[str, str], str] = {
     ("suppress", "5p_utr"): "gain_of_function",
     ("enhance", "3p_utr_mirna"): "mirna_mediated_repression",
     ("enhance", "uorf"): "uorf_mediated_repression",
     ("suppress", "structured_element"): "structured_element_dysregulation",
     ("enhance", "structured_element"): "structured_element_dysregulation",
+    # A29 / A30 / A31. Both directions map to the same defect class: the
+    # element is either driving translation or it is not, and which way the
+    # user wants to push it is a design choice, not a different defect.
+    ("enhance", "ires_element"): "ires_mediated_translation",
+    ("suppress", "ires_element"): "ires_mediated_translation",
+    ("enhance", "kozak_consensus"): "kozak_context_dysregulation",
+    ("suppress", "kozak_consensus"): "kozak_context_dysregulation",
+    ("enhance", "polya_site"): "pabp_competition_defect",
+    ("suppress", "polya_site"): "pabp_competition_defect",
 }
 
-ISO_ENGINEERING_MECHANISM_IDS = ["A7", "A8", "A9", "A10"]
+# All seven TG06 mechanisms, for callers that need the roster.
+TRANSLATIONAL_MECHANISM_IDS = ["A2", "A5", "A6", "A27", "A29", "A30", "A31"]
 
-# NOTE: `intron_retention` maps to a defect served only by A11, which is not a
-# TG07 mechanism — so this row has always produced an empty ranking. Preserved
-# verbatim rather than quietly repaired; correcting it is a product decision
-# about what "intron retention" should mean here, not a code fix.
+# TG07 is a scored goal again, and no longer a strict subset of TG04: A11 is
+# now dual-tagged and A32/A33 are unique to it.
+ISO_ENGINEERING_MECHANISM_IDS = ["A7", "A8", "A9", "A10", "A11", "A32", "A33"]
+
+# The old `intron_retention` row mapped to `apa_dysregulation`, a defect
+# served only by A11 — which was not a TG07 mechanism at the time, so that
+# row always returned an empty ranking. Both halves of that are now fixed:
+# A11 carries the TG07 tag, and intron retention has its own defect class
+# and its own mechanism (A33) rather than being aliased onto APA.
 ISOFORM_GOAL_DEFECT_MAP = {
     "exon_skipping": "exon_skipping_mutation",
     "exon_inclusion": "exon_inclusion_defect",
-    "intron_retention": "apa_dysregulation",
+    "intron_retention": "intron_retention_defect",
     "alternative_splice_site": "cryptic_splice_site",
     "mutually_exclusive_exon": "exon_inclusion_defect",
+    "apa_modulation": "apa_dysregulation",
+    "alt_promoter_switch": "alt_promoter_dysregulation",
 }
 
 # TG09 form vocabularies. Retained so the existing page still renders; the
@@ -426,18 +454,22 @@ def rank_rna_neutralization_mechanisms(
 # TG06 — Translational Regulation (retired as a scoring partition)
 # ---------------------------------------------------------------------------
 
-def filter_translational_regulation(
+def rank_translational_regulation_mechanisms(
     translational_goal: str | None,
     target_element: str | None,
     delivery_context: str | None = None,
     oligo_length: int | None = None,
 ) -> list[dict]:
-    """TG06 display-tag view. There is no TG06 scorer any more.
+    """TG06 view of the unified ranking.
 
-    A2 belongs to gene silencing, A5 and A6 to gene activation; only A27 is
-    uniquely TG06, and it is research-stage with no FDA drug and no clinical
-    programme. The (goal, element) pair the page collects is translated into
-    the unified defect vocabulary and the shared ranking does the rest.
+    TG06 is a scored goal again, now with seven mechanisms: A2, A5 and A6
+    (shared with gene silencing and activation), A27, and the three added
+    with the restoration — A29 IRES, A30 Kozak, A31 PABP competition.
+
+    This is still a filter over the one shared pass, not a separate scorer.
+    The (goal, element) pair the page collects is translated into the unified
+    defect vocabulary and the shared ranking does the rest, so a mechanism
+    cannot score differently here than it does anywhere else.
     """
     defect = TRANSLATIONAL_ELEMENT_DEFECT.get(
         (translational_goal or "", target_element or "")
@@ -454,17 +486,22 @@ def filter_translational_regulation(
 # TG07 — Isoform Engineering (retired as a scoring partition)
 # ---------------------------------------------------------------------------
 
-def filter_isoform_engineering(
+def rank_isoform_engineering_mechanisms(
     isoform_goal: str,
     target_exon_locus: str | None = None,
     splice_element_target: str | None = None,
     delivery_context: str | None = None,
 ) -> list[dict]:
-    """TG07 display-tag view. There is no TG07 scorer any more.
+    """TG07 view of the unified ranking.
 
-    Every TG07 mechanism is a TG04 mechanism, so this is the TG04 ranking
-    filtered to the isoform-engineering tag — by construction it can no
-    longer disagree with the RNA-processing page about the same transcript.
+    TG07 is a scored goal again and no longer a strict subset of TG04. It now
+    covers seven mechanisms: A7-A10 (shared with RNA processing), A11 (APA,
+    dual-tagged), and A32 / A33, which are unique to it. The framing that
+    separates them is intent — TG04 fixes broken splicing, TG07 chooses
+    between isoforms that are all functional.
+
+    Still a filter over the one shared pass, so a mechanism shared with TG04
+    cannot score differently depending on which page asked.
     """
     ctx = ArbitrationContext(
         molecular_defect=ISOFORM_GOAL_DEFECT_MAP.get(isoform_goal, isoform_goal),

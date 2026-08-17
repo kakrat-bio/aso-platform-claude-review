@@ -16,8 +16,8 @@ docs/planning/therapeutic_goal_scope_plan_v3.md):
 - TG03 RNA Editing                 deferred A13, A16-A20; no arbitration claimed
 - TG04 RNA Processing              scored   A7, A8, A9, A10; A11 halts
 - TG05 RNA Neutralization          narrow   A14 (halts pending F12)
-- TG06 Translational Regulation    retired as a scoring partition; display tag
-- TG07 Isoform Engineering         retired as a scoring partition; display tag
+- TG06 Translational Regulation    scored   A2, A5, A6, A27, A29, A30, A31
+- TG07 Isoform Engineering         scored   A7-A11, A32, A33 (A11 dual-tagged)
 - TG08 Protein Replacement         flag only; A24, A26 never scored
 - TG09 Protein Function Modulation flag only; A25 never scored
 
@@ -55,8 +55,8 @@ from services.mechanism_service import (
     rank_rna_processing_mechanisms,
     rank_rna_editing_mechanisms,
     rank_rna_neutralization_mechanisms,
-    filter_translational_regulation,
-    filter_isoform_engineering,
+    rank_translational_regulation_mechanisms,
+    rank_isoform_engineering_mechanisms,
     lookup_protein_function_modulation,
     protein_replacement_scope_notice,
     DEFECT_TYPES,
@@ -411,9 +411,9 @@ async def translational_regulation_mechanisms(payload: TranslationalRegulationRe
              detail=f"Unknown steric_chemistry: {payload.steric_chemistry}",
          )
 
-     # TG06 is no longer a scoring partition. This is the unified ranking
-     # filtered to the translational-regulation display tag.
-     results = filter_translational_regulation(
+     # TG06 is a scored goal again (7 mechanisms). Still a filter over the
+     # one shared pass, so it cannot disagree with any other route.
+     results = rank_translational_regulation_mechanisms(
          translational_goal=payload.translational_goal,
          target_element=payload.target_element,
          delivery_context=payload.delivery_context,
@@ -423,7 +423,6 @@ async def translational_regulation_mechanisms(payload: TranslationalRegulationRe
      return {
          "geneSymbol": payload.gene_symbol.strip().upper(),
          "therapeuticGoal": "Translational Regulation",
-         "goalNotice": RETIRED_AS_SCORING_PARTITION["TG06"],
          "inputs": {
              "translationalGoal": payload.translational_goal,
              "targetElement": payload.target_element,
@@ -502,11 +501,9 @@ async def isoform_engineering_mechanisms(payload: IsoformEngineeringRequest):
             detail=f"Unknown isoform_goal: {payload.isoform_goal}",
         )
 
-    # TG07 is no longer a scoring partition: every one of its mechanisms is a
-    # TG04 mechanism. This is the unified ranking filtered to the
-    # isoform-engineering display tag, so it can no longer disagree with the
-    # RNA-processing page about the same transcript.
-    results = filter_isoform_engineering(
+    # TG07 is a scored goal again (7 mechanisms, no longer a TG04 subset).
+    # Still a filter over the one shared pass.
+    results = rank_isoform_engineering_mechanisms(
         isoform_goal=payload.isoform_goal,
         target_exon_locus=payload.target_exon_locus,
         splice_element_target=payload.splice_element_target,
@@ -516,7 +513,6 @@ async def isoform_engineering_mechanisms(payload: IsoformEngineeringRequest):
     return {
         "geneSymbol": payload.gene_symbol.strip().upper(),
         "therapeuticGoal": "Isoform Engineering",
-        "goalNotice": RETIRED_AS_SCORING_PARTITION["TG07"],
         "inputs": {
             "isoformGoal": payload.isoform_goal,
             "targetExonLocus": payload.target_exon_locus,

@@ -1,0 +1,45 @@
+{
+  "id": "A30",
+  "enabled": true,
+  "name": "Kozak Sequence Modulation",
+  "category": "Translation initiation modulation",
+  "therapeuticGoalIds": [
+    "TG06"
+  ],
+  "therapeuticGoalDescription": "Increase or decrease protein synthesis by regulating mRNA translation without altering RNA abundance.",
+  "molecularDefect": "Diseases in which the Kozak consensus context around the initiator AUG gives translation initiation efficiency that is too low or too high for therapeutic benefit.",
+  "suitableVariantTypes": "Variants altering the Kozak consensus (gcc(A/G)ccAUGG); regulatory contexts where initiation efficiency limits protein output.",
+  "rnaTargetRegion": "The Kozak consensus region immediately flanking the initiator AUG.",
+  "transcriptRequirement": "Target transcript with an identifiable initiator AUG and flanking Kozak context.",
+  "asoChemistry": "RNase H-independent steric-blocking ASOs: PMO, 2'-MOE full-phosphorothioate, LNA/DNA mixmers",
+  "typicalLength": "Approximately 18-30 nt for steric-blocking ASOs.",
+  "designRules": "Steric occupancy only - no RNase H recruitment. Effect size depends on surrounding nucleotide context; may require precise positioning relative to AUG.",
+  "advantages": "Well-characterized consensus sequence (gcc(A/G)ccAUGG); predictable effect on initiation efficiency; works in both directions (strengthen or weaken).",
+  "limitations": "Effect size depends on surrounding nucleotide context; may require precise positioning relative to AUG.",
+  "offTargetConsiderations": "Kozak-like sequences exist in many transcripts; selectivity depends on flanking nucleotide identity.",
+  "fdaApprovedDrugs": "None",
+  "clinicalTrialExamples": "None identified; validated preclinically for globin, albumin, and other housekeeping genes.",
+  "evidenceLevel": {
+    "rating": "Moderate",
+    "note": "Strong structural biology; validated in multiple systems; no approved therapy."
+  },
+  "references": [],
+  "arbitration": {
+    "scoringMode": "scored",
+    "designAvailable": true,
+    "goalTags": [
+      "TG06"
+    ],
+    "primaryGoal": "TG06",
+    "defectClasses": [
+      "kozak_context_dysregulation"
+    ],
+    "editTypes": [],
+    "excludedTranscriptClasses": [],
+    "requiresIntrons": false,
+    "requiredFeatures": [],
+    "discriminatingFeatures": [],
+    "forbiddenFeatures": [],
+    "note": "Sub-mode of A2 (steric-blocking translation inhibition) but targeting the Kozak consensus specifically rather than general 5' UTR."
+  }
+}
