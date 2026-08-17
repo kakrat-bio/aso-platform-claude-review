@@ -85,6 +85,7 @@ from services.mechanism_service import (
 )
 from services.gene_feature_service import analyze_gene_features
 from services.reference_tables import status as reference_table_status
+from services.spliceai_service import status as spliceai_status
 
 router = APIRouter()
 
@@ -621,6 +622,10 @@ async def mechanism_scope():
         # mechanism halts or a modality flag is withheld, so the answer to
         # "why did I get nothing?" is visible rather than buried.
         "referenceTables": reference_table_status(),
+        # F1/F2/F3 resolve from SpliceAI when a pre-mRNA sequence is supplied
+        # and fall back to the user-asserted stand-in otherwise. This says
+        # which of those is in play.
+        "spliceai": spliceai_status(),
     }
 
 

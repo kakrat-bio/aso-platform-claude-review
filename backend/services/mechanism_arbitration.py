@@ -464,6 +464,14 @@ class ArbitrationContext:
     repeat_unit: str | None = None
     repeat_count: str | None = None
     oligo_length: int = 18
+    # SpliceAI inputs for F1/F2/F3. A pre-mRNA (genomic) sequence is
+    # required — a mature transcript has no exon/intron boundaries left to
+    # score.
+    pre_mrna_sequence: str | None = None
+    variant_offset: int | None = None
+    variant_alt: str | None = None
+    exon_start: int | None = None
+    exon_end: int | None = None
     # Modality-flag inputs. These never enter a score; they decide only
     # whether a qualitative signpost toward a modality this platform does not
     # design is worth showing.
@@ -488,6 +496,11 @@ class ArbitrationContext:
             oligo_length=self.oligo_length,
             tissue_tpm=self.tissue_tpm,
             protein_localisation=self.protein_localisation,
+            pre_mrna_sequence=self.pre_mrna_sequence,
+            variant_offset=self.variant_offset,
+            variant_alt=self.variant_alt,
+            exon_start=self.exon_start,
+            exon_end=self.exon_end,
         )
 
 

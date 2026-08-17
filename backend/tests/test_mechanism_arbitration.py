@@ -416,3 +416,122 @@ def test_curated_entries_outrank_bulk_annotation():
     assert F.PROVENANCE_CAP[F.CONFIRMED] > F.PROVENANCE_CAP[F.ANNOTATION]
     assert F.PROVENANCE_CAP[F.ANNOTATION] > F.PROVENANCE_CAP[F.PREDICTED]
     assert F.PROVENANCE_CAP[F.PREDICTED] > F.PROVENANCE_CAP[F.USER_ASSERTED]
+
+
+# ---------------------------------------------------------------------------
+# SpliceAI-backed F1/F2/F3
+# ---------------------------------------------------------------------------
+
+def _synthetic_pre_mrna(seed=7, ex1=150, intron_body=300, ex2=150):
+    """Exon | intron with canonical GT..AG | exon."""
+    import random
+    rng = random.Random(seed)
+    e1 = "".join(rng.choice("ACGT") for _ in range(ex1))
+    intron = ("GTAAGT" + "".join(rng.choice("ACGT") for _ in range(intron_body))
+              + "TTTTTTTTTTGCAG")
+    e2 = "".join(rng.choice("ACGT") for _ in range(ex2))
+    return e1, intron, e2
+
+
+def _require_spliceai():
+    import pytest
+    from services import spliceai_service as SAI
+    ok, why = SAI.available()
+    if not ok:
+        pytest.skip(f"SpliceAI unavailable: {why}")
+    return SAI
+
+
+def test_spliceai_finds_the_acceptor_where_it_was_placed():
+    """Ground truth we control: the model must locate a canonical AG.
+
+    Without this, every downstream F1/F2/F3 assertion is testing plumbing
+    rather than predictions.
+    """
+    import numpy as np
+    SAI = _require_spliceai()
+    e1, intron, e2 = _synthetic_pre_mrna()
+    pre = e1 + intron + e2
+    probs = SAI.predict(pre)
+    assert probs is not None
+
+    acceptor = probs[:, 1]
+    true_pos = len(e1) + len(intron)   # 3' end of the intron
+
+    # Not "is it the global maximum" — random filler contains plenty of AG
+    # dinucleotides and a spurious site can outscore the planted one on some
+    # seeds. The robust claim is that the planted acceptor is among the very
+    # top positions and sits orders of magnitude above the background.
+    rank = int((acceptor > acceptor[true_pos]).sum())
+    assert rank < 5, f"planted acceptor ranked {rank} of {len(acceptor)}"
+    assert acceptor[true_pos] > 100 * float(np.median(acceptor))
+
+
+def test_f1_resolves_from_spliceai_not_the_user_dropdown():
+    """With a pre-mRNA supplied, the answer stops resting on the user's input.
+
+    This is the whole point of wiring SpliceAI: standInOnly must go False and
+    the confidence cap must rise from user_asserted to predicted.
+    """
+    _require_spliceai()
+    e1, intron, e2 = _synthetic_pre_mrna()
+    pre = e1 + intron + e2
+    out = A.arbitrate(A.ArbitrationContext(
+        gene_symbol="TESTG", molecular_defect="exon_skipping_mutation",
+        pre_mrna_sequence=pre,
+        exon_start=len(e1 + intron), exon_end=len(pre) - 1))
+
+    f1 = out["features"]["F1"]
+    assert f1["provenance"] == F.PREDICTED
+    assert f1["standIn"] is False
+    a7 = next(r for r in out["results"] if r["id"] == "A7")
+    assert a7["standInOnly"] is False
+    assert a7["confidence"]["upper"] <= F.PROVENANCE_CAP[F.PREDICTED]
+
+
+def test_f1_falls_back_to_the_stand_in_without_a_pre_mrna():
+    """No sequence, no prediction — the documented stand-in still applies."""
+    out = A.arbitrate(A.ArbitrationContext(
+        gene_symbol="DMD", molecular_defect="exon_skipping_mutation"))
+    assert out["features"]["F1"]["standIn"] is True
+
+
+def test_f1_does_not_score_a_boundary_that_does_not_exist():
+    """A terminal exon has no downstream donor.
+
+    Scoring the missing side reads 0.00 and would mark every first and
+    terminal exon "weakly recognised" — a prediction about a splice site
+    that is not there.
+    """
+    _require_spliceai()
+    e1, intron, e2 = _synthetic_pre_mrna()
+    pre = e1 + intron + e2
+    first = F.resolve_features(F.FeatureContext(
+        pre_mrna_sequence=pre, exon_start=0, exon_end=len(e1) - 1))["F1"]
+    assert "not scored" in (first.detail or "")
+    # The real donor at the end of exon 1 is strong, so it must NOT be
+    # reported as weakly recognised on the strength of an absent acceptor.
+    assert first.state == F.ABSENT
+
+
+def test_f2_requires_a_gain_not_merely_a_change():
+    """Destroying an acceptor is a loss; F2 asks whether one was CREATED."""
+    _require_spliceai()
+    e1, intron, e2 = _synthetic_pre_mrna()
+    pre = e1 + intron + e2
+    out = A.arbitrate(A.ArbitrationContext(
+        gene_symbol="TESTG", molecular_defect="cryptic_splice_site",
+        pre_mrna_sequence=pre,
+        variant_offset=len(e1) + len(intron) - 2, variant_alt="T"))
+    f2 = out["features"]["F2"]
+    assert f2["state"] == F.ABSENT
+    assert f2["provenance"] == F.PREDICTED
+
+
+def test_delta_scores_refuse_length_changing_variants():
+    """An indel shifts the coordinate frame, so a positionwise diff would
+    report an artefact of the shift rather than a splicing change."""
+    SAI = _require_spliceai()
+    e1, intron, e2 = _synthetic_pre_mrna()
+    pre = e1 + intron + e2
+    assert SAI.delta_scores(pre, pre + "A") is None

@@ -62,6 +62,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from . import reference_tables as RT
+from . import spliceai_service as SAI
 
 # ---------------------------------------------------------------------------
 # States and provenance
@@ -159,17 +160,17 @@ FEATURE_CATALOG: dict[str, dict[str, Any]] = {
     "F1": {
         "label": "Exon weakly recognised by spliceosome",
         "intendedSource": "SpliceAI",
-        "wired": False,
+        "wired": True,
     },
     "F2": {
         "label": "Variant creates a cryptic splice site",
         "intendedSource": "SpliceAI + MaxEntScan",
-        "wired": False,
+        "wired": True,
     },
     "F3": {
         "label": "Deep-intronic pseudoexon activated",
         "intendedSource": "SpliceAI",
-        "wired": False,
+        "wired": True,
     },
     "F4": {
         "label": "Transcript contains an NMD-inducing (poison) exon",
@@ -348,6 +349,14 @@ class FeatureContext:
     repeat_unit: str | None = None
     repeat_count: str | None = None
     oligo_length: int = 18
+    # SpliceAI inputs. A pre-mRNA (genomic, introns retained) sequence is
+    # required: splice-site recognition is a statement about exon/intron
+    # boundaries, and a mature transcript has none left.
+    pre_mrna_sequence: str | None = None
+    variant_offset: int | None = None      # 0-based, into pre_mrna_sequence
+    variant_alt: str | None = None         # single substituted base
+    exon_start: int | None = None          # 0-based offset of the exon of interest
+    exon_end: int | None = None            # 0-based, inclusive
     # Modality-flag inputs.
     tissue_tpm: float | None = None
     protein_localisation: str | None = None
@@ -939,6 +948,174 @@ def _intron_retention_benefit(ctx: FeatureContext) -> Feature | None:
     )
 
 
+# SpliceAI's own reporting convention: 0.2 high-recall, 0.5 recommended,
+# 0.8 high-precision. 0.5 is used here.
+#
+# DE-NOVO IN THIS CONTEXT — these cut points come from SpliceAI's variant
+# interpretation guidance, not from a calibration against this platform's
+# outcome. The scores are uncalibrated network outputs (M3 is open), so
+# everything derived from them carries the PREDICTED tier.
+SPLICEAI_SITE_THRESHOLD = 0.5
+SPLICEAI_DELTA_THRESHOLD = 0.5
+# Beyond this distance from an exon boundary a gained site is treated as
+# deep-intronic, i.e. pseudoexon territory (F3) rather than a cryptic site
+# adjacent to a real junction (F2).
+DEEP_INTRONIC_NT = 100
+
+
+def _alt_sequence(ctx: FeatureContext) -> str | None:
+    """Build the variant sequence by substituting one base.
+
+    Substitutions only. An indel changes the coordinate frame, and comparing
+    shifted positions reports a difference that is an artefact of the shift
+    rather than of splicing.
+    """
+    seq, off, alt = ctx.pre_mrna_sequence, ctx.variant_offset, ctx.variant_alt
+    if not seq or off is None or not alt or len(alt) != 1:
+        return None
+    if not (0 <= off < len(seq)):
+        return None
+    return seq[:off] + alt.upper() + seq[off + 1:]
+
+
+def _spliceai_exon_recognition(ctx: FeatureContext) -> Feature | None:
+    """F1 — is the exon weakly recognised by the spliceosome?
+
+    Scores the acceptor at the exon start and the donor at the exon end.
+    Weak recognition of EITHER boundary is what makes an exon skippable or
+    in need of inclusion help, so the weaker of the two governs.
+
+    Without exon coordinates the strongest site anywhere in the sequence is
+    used instead, which answers a weaker question and says so.
+    """
+    if not ctx.pre_mrna_sequence:
+        return None
+    scores = SAI.splice_site_scores(ctx.pre_mrna_sequence)
+    if scores is None:
+        return None
+
+    if ctx.exon_start is not None and ctx.exon_end is not None:
+        probs = SAI.predict(ctx.pre_mrna_sequence)
+        if probs is None:
+            return None
+        n = len(probs)
+        # Only score boundaries that exist. A first exon has no upstream
+        # acceptor and a terminal exon has no downstream donor, so scoring
+        # the missing side reads 0.00 and would mark every terminal exon
+        # "weakly recognised" — a prediction about a splice site that is not
+        # there. A boundary sitting at the edge of the supplied sequence is
+        # treated the same way, because there is no flanking context to
+        # score it against.
+        edge = 1
+        scored: list[tuple[str, float]] = []
+        if ctx.exon_start is not None and edge <= ctx.exon_start < n:
+            scored.append(("acceptor", float(probs[ctx.exon_start][1])))
+        if ctx.exon_end is not None and 0 <= ctx.exon_end < n - edge:
+            scored.append(("donor", float(probs[ctx.exon_end][2])))
+
+        if not scored:
+            return _unresolved(
+                "F1",
+                "Both exon boundaries sit at the edge of the supplied "
+                "sequence, so neither can be scored. Supply a pre-mRNA "
+                "window with flanking intron on the side(s) that matter.",
+            )
+
+        weakest = min(v for _, v in scored)
+        weak = weakest < SPLICEAI_SITE_THRESHOLD
+        shown = ", ".join(f"{name} {v:.2f}" for name, v in scored)
+        omitted = (
+            "" if len(scored) == 2
+            else " (the other boundary is at the sequence edge — a first or "
+                 "terminal exon has no site there — so it was not scored)"
+        )
+        detail = (
+            f"SpliceAI {shown}; the weaker scored boundary governs "
+            f"({weakest:.2f} vs threshold {SPLICEAI_SITE_THRESHOLD})"
+            f"{omitted}"
+        )
+    else:
+        weakest = max(scores["maxAcceptor"], scores["maxDonor"])
+        weak = weakest < SPLICEAI_SITE_THRESHOLD
+        detail = (
+            f"No exon coordinates supplied, so the strongest site anywhere in "
+            f"the {scores['length']} nt window was used: acceptor "
+            f"{scores['maxAcceptor']:.2f}, donor {scores['maxDonor']:.2f}. "
+            "Supply exon_start/exon_end to score the boundaries that matter."
+        )
+
+    # PRESENT means "weakly recognised" — that is what the feature asserts.
+    return Feature(
+        id="F1",
+        state=PRESENT if weak else ABSENT,
+        probability=round(1.0 - weakest, 4) if weak else round(1.0 - weakest, 4),
+        provenance=PREDICTED,
+        source="SpliceAI ensemble (5 models)",
+        detail=detail,
+    )
+
+
+def _spliceai_cryptic_site(ctx: FeatureContext) -> Feature | None:
+    """F2 — does the variant create a cryptic splice site?"""
+    alt = _alt_sequence(ctx)
+    if alt is None:
+        return None
+    d = SAI.delta_scores(ctx.pre_mrna_sequence, alt, window=DEEP_INTRONIC_NT)
+    if d is None:
+        return None
+    gain = max(d["acceptorGain"], d["donorGain"])
+    return Feature(
+        id="F2",
+        state=PRESENT if gain >= SPLICEAI_DELTA_THRESHOLD else ABSENT,
+        probability=round(gain, 4) if gain > 0 else 0.02,
+        provenance=PREDICTED,
+        source="SpliceAI ensemble delta scores",
+        detail=(
+            f"Within {DEEP_INTRONIC_NT} nt of the variant: acceptor gain "
+            f"{d['acceptorGain']:.2f}, donor gain {d['donorGain']:.2f} "
+            f"(threshold {SPLICEAI_DELTA_THRESHOLD}). Raw SpliceAI deltas, "
+            "not calibrated probabilities."
+        ),
+    )
+
+
+def _spliceai_pseudoexon(ctx: FeatureContext) -> Feature | None:
+    """F3 — does the variant activate a deep-intronic pseudoexon?
+
+    A pseudoexon needs a gained ACCEPTOR and a gained DONOR bracketing a new
+    exon, far enough from any real junction to be intronic. Requiring both
+    is what separates this from F2's single cryptic site.
+    """
+    alt = _alt_sequence(ctx)
+    if alt is None:
+        return None
+    full = SAI.delta_scores(ctx.pre_mrna_sequence, alt, window=None)
+    if full is None:
+        return None
+
+    both = min(full["acceptorGain"], full["donorGain"])
+    near = SAI.delta_scores(
+        ctx.pre_mrna_sequence, alt, window=DEEP_INTRONIC_NT)
+    deep = both >= SPLICEAI_DELTA_THRESHOLD and (
+        near is None or max(near["acceptorGain"], near["donorGain"]) < both
+    )
+    return Feature(
+        id="F3",
+        state=PRESENT if deep else ABSENT,
+        probability=round(both, 4) if both > 0 else 0.02,
+        provenance=PREDICTED,
+        source="SpliceAI ensemble delta scores",
+        detail=(
+            f"Pseudoexon activation needs a gained acceptor AND a gained "
+            f"donor bracketing a new exon: acceptor gain "
+            f"{full['acceptorGain']:.2f}, donor gain {full['donorGain']:.2f}, "
+            f"weaker of the two {both:.2f} (threshold "
+            f"{SPLICEAI_DELTA_THRESHOLD}), and the gain must sit further than "
+            f"{DEEP_INTRONIC_NT} nt from the variant to be deep-intronic."
+        ),
+    )
+
+
 def _residual_transcript(ctx: FeatureContext) -> Feature | None:
     """P2 — is there endogenous transcript left for a boosting mechanism?
 
@@ -1142,12 +1319,14 @@ def _normalize_repeat_unit(repeat_unit: str | None) -> str | None:
 # wins. An empty list means the feature has no source at all and always
 # resolves UNRESOLVED — the mechanisms requiring it halt.
 _LADDERS: dict[str, list[Callable[[FeatureContext], Feature | None]]] = {
-    "F1": [lambda c: _from_defect(
+    # SpliceAI first; the user's defect dropdown remains as the documented
+    # stand-in beneath it, for callers with no pre-mRNA sequence to give.
+    "F1": [_spliceai_exon_recognition, lambda c: _from_defect(
         c, "F1", {"exon_skipping_mutation", "exon_inclusion_defect"},
         "Weak exon recognition")],
-    "F2": [lambda c: _from_defect(
+    "F2": [_spliceai_cryptic_site, lambda c: _from_defect(
         c, "F2", {"cryptic_splice_site"}, "Cryptic splice-site creation")],
-    "F3": [lambda c: _from_defect(
+    "F3": [_spliceai_pseudoexon, lambda c: _from_defect(
         c, "F3", {"pseudoexon_activation"}, "Pseudoexon activation")],
     "F4": [
         lambda c: _from_annotation(
