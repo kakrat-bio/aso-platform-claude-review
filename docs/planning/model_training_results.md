@@ -18,13 +18,13 @@ Seed 42 throughout.
 
 | Model | Status | Outcome |
 |---|---|---|
-| **M1** token cross-attention | **BLOCKED** | Needs `Hu.csv` and RNA-FM weights, neither in the repo. The re-annotation it depends on needs BLAST + a transcript DB. |
+| **M1** token cross-attention | **PARTLY UNBLOCKED** | `Hu.csv` supplied and loading (2,361 rows). Still blocked on RNA-FM weights (download 403s) and the gene re-annotation. |
 | **M2** LightGBM lambdarank | **RUN** | Acceptance PASSED. Best model is `regress-rank`, not lambdarank. |
-| **M3** SpliceAI calibration | **BLOCKED** | No SpliceAI install; calibration reference set is MUST VERIFY. |
+| **M3** SpliceAI calibration | **BLOCKED** | SpliceAI is reported as installed but is not present on this machine; reference set is MUST VERIFY. |
 | **M4** NMD-exon classifier | **BLOCKED** | Needs a GENCODE release; MUST VERIFY. |
 | **M5** uORF regressor | **BLOCKED** | Needs ribosome profiling data; MUST VERIFY. |
 | **M6** Mondrian conformal | **RUN** | **Found and fixed an off-by-one that broke the coverage guarantee.** |
-| **M7** OOD scorer | **BLOCKED** | Needs RNA-FM embeddings of training transcripts. |
+| **M7** OOD scorer | **BLOCKED** | Needs RNA-FM embeddings; weight download 403s. |
 
 ---
 
@@ -293,3 +293,151 @@ the same missing weights as M1.
   rerun. Until then any coverage figure in the paper drawn from them is void.
 - **SO-ML-05** — the siRNA re-annotation backend, database release and
   contact email need deciding before M1 can be evaluated honestly.
+
+---
+
+## Round 2 — unblocking pass
+
+Following the ML section supplied with `organism tier and other qns.docx`.
+Environment claims in that section were checked rather than assumed; two did
+not hold here.
+
+### 1. Hu.csv — LANDED
+
+Placed at `OligoFormer/data/Hu.csv`, which is the path every experiment
+script hardcodes. Loads through `HueskenDataset` at **2,361 rows**, matching
+the M1 spec exactly. Columns `siRNA, mRNA, label, y, td` line up with what
+the loader expects.
+
+`test_dataset.py`: 2 pass, 2 skip. The two that skip need the RNA-FM
+embedding cache, which needs weights (see item 3).
+
+**Also fixed a false green.** Those two tests previously did
+`print("Skipping"); return` on a missing cache, which pytest reports as
+PASSED. A test that executes nothing and reports green is worse than one
+that fails. Now `pytest.skip` with the reason and the command to fix it.
+
+### 2. SpliceAI — NOT INSTALLED, F1/F2/F3 still on stand-ins
+
+The doc states "spliceai is now installed". It is not present in any
+interpreter or anywhere on disk on this machine:
+
+```
+python3           -> ModuleNotFoundError: No module named 'spliceai'
+scratch venv      -> ModuleNotFoundError: No module named 'spliceai'
+find / -name 'spliceai*'  -> nothing outside Downloads
+```
+
+So F1, F2 and F3 remain on the user-asserted stand-in rung and everything
+said about that in the arbitration notes still holds. **Nothing was wired**,
+because wiring an import that does not resolve would turn a documented
+stand-in into a broken one.
+
+Also note the interface named in the doc (`from spliceai import SpliceAI`,
+`SpliceAI(spliceai_models_path)`) should be confirmed against the package
+that actually gets installed — the pip distribution and the Illumina
+repository do not expose the same API.
+
+### 3. RNA-FM — package installs, weights do not download
+
+`pip install rna-fm` succeeds and `from fm.pretrained import rna_fm_t12`
+imports. The auto-download then fails:
+
+```
+Downloading: "https://proj.cse.cuhk.edu.hk/rnafm/api/download?filename=RNA-FM_pretrained.pth"
+HTTP Error 403: Forbidden
+```
+
+Two corrections to the verification command in the doc:
+- the symbol is `rna_fm_t12` (from `fm.pretrained`), not `rnafm_t12`
+- it is not importable from `features.rnafm` as written
+
+So M1, M7 and the two skipped dataset tests stay blocked on weights. Fetching
+them needs either a working mirror or a manual download to
+`backend/pretrained/RNA-FM_pretrained.pth`, which `RNAFMEmbedder` already
+prefers when present.
+
+### 4. test_main.py — one stale test fixed, two specify fabricated data
+
+The doc describes all three as "stale refs". One is. Two are not.
+
+**Fixed (genuinely stale).** `monkeypatch.setattr(main_module,
+"get_top_dbsnp_id", ...)` in two tests. `main.py` has never defined or called
+that function — no commit in the history touches it — so the patch raised
+before the test reached anything real. Removed, along with the unreachable
+stub. `test_initialize_target_preserves_aso_metrics_when_analysis_is_slow`
+now passes for real.
+
+**Left failing, deliberately, as `xfail(strict=True)`:**
+
+`test_get_aso_analysis_uses_gene_metadata_without_network` asks for a
+`gene_metadata` fast path that this codebase has never had. Two of its four
+assertions cannot be met honestly:
+
+- `structuralAccessibility` is computed from CDS **sequence** GC content in
+  `_compute_aso_metrics_from_sequence`. `gene_metadata` carries counts and
+  coordinates, no sequence. With the network forbidden there is nothing to
+  compute it from.
+- `spliceSwitches == 94` implies `totalTranscripts - 1`, while the network
+  path defines it as `(distinct exon counts) - 1`. Satisfying the test gives
+  one output field two different meanings depending on which path ran.
+
+`test_initialize_target_uses_generic_aso_fallback_for_any_gene_when_analysis_times_out`
+asks the endpoint to emit `activeIsoforms=1`, `spliceSwitches=0` and a truthy
+`structuralAccessibility` **when the analysis times out**. Those are invented
+values delivered in the same fields as measured ones, with nothing marking
+them as a fallback — the same defect class as the `hash()`-derived binding
+affinities and the always-True feature placeholders removed earlier in this
+review. On timeout `_run_sync` correctly returns `{}` and the fields stay
+None.
+
+Making either green requires inventing numbers, so both are marked with the
+reasoning inline. **This is a decision to confirm, not a fix to apply.**
+
+### 5. Full suite
+
+```
+48 passed, 2 skipped, 2 xfailed
+```
+
+| file | result |
+|---|---|
+| test_benchmark.py | 5 passed |
+| test_dataset.py | 2 passed, 2 skipped (no RNA-FM weights) |
+| test_features.py | 1 passed |
+| test_gene_service.py | 2 passed |
+| test_gene_silencing_service.py | 2 passed |
+| test_main.py | 1 passed, 2 xfailed (see above) |
+| test_mechanism_arbitration.py | 30 passed |
+| test_token_model.py | 5 passed |
+
+Before this pass the suite could not be collected at all in a clean
+environment: `fastapi`, `sqlalchemy`, `aiohttp`, `torch`, `rna-fm`,
+`lightgbm`, `pandas` and `ViennaRNA` were all missing. Installing them is
+what makes the numbers above reproducible; `backend/requirements.txt` lists
+them but nothing pins versions.
+
+### SO-ML decisions — recorded, with one discrepancy
+
+| item | decision | status |
+|---|---|---|
+| SO-ML-01 | Ship regress-rank as M2 | Matches the measurement (top-10 0.302). Applied. |
+| SO-ML-02 | "Use pooled Pearson (0.362) for publication" | **Number does not match any measurement here.** See below. |
+| SO-ML-03 | Publish "no guarantee" for siRNA and splice-switching | Matches; `conformal_topk` already returns that, and the calibration-group counts (3 and 6) are as stated. |
+| SO-ML-04 | pipeline_result.json stale, regenerate after F1-F3 | Agreed; blocked on SpliceAI. Old coverage numbers remain void. |
+| SO-ML-05 | siRNA re-annotation skipped, not on critical path | Applied. The gene-split guard still refuses rather than mislabelling. |
+
+**SO-ML-02 needs checking before it is published.** The measured pooled
+Pearson values on the gene split are:
+
+| model | pooled | per-experiment |
+|---|---|---|
+| lambdarank-rank | 0.278 | 0.285 |
+| regress-raw | 0.270 | 0.297 |
+| **regress-rank** | **0.309** | 0.312 |
+
+There is no 0.362 in this run. It may come from a different split, a
+different subset, or the pre-fix pipeline. Until its origin is identified it
+should not go into a paper — every number in this project is supposed to
+trace to a run. `m2_rnase_h_ranker.json` carries the full provenance for the
+figures above.

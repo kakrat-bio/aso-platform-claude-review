@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from backend.datasets.huesken import HueskenDataset
 from backend.datasets.torch_dataset import ASODataset, ASOEmbeddingDataset
 from backend.features.embed_cache import CACHE_FILE
@@ -9,8 +11,11 @@ from torch.utils.data import DataLoader
 
 def test_embedding_dataset():
     if not os.path.exists(CACHE_FILE):
-        print("Skipping — no embedding cache found")
-        return
+        pytest.skip(
+            f"no RNA-FM embedding cache at {CACHE_FILE} — run "
+            "features.embed_cache.precompute_embeddings first. Returning "
+            "silently here would report PASSED for a test that ran nothing."
+        )
 
     dataset = HueskenDataset("OligoFormer/data/Hu.csv")
     emb_dataset = ASOEmbeddingDataset(dataset, cache_path=CACHE_FILE)
@@ -26,8 +31,11 @@ def test_embedding_dataset():
 
 def test_embedding_dataloader():
     if not os.path.exists(CACHE_FILE):
-        print("Skipping — no embedding cache found")
-        return
+        pytest.skip(
+            f"no RNA-FM embedding cache at {CACHE_FILE} — run "
+            "features.embed_cache.precompute_embeddings first. Returning "
+            "silently here would report PASSED for a test that ran nothing."
+        )
 
     dataset = HueskenDataset("OligoFormer/data/Hu.csv")
     emb_dataset = ASOEmbeddingDataset(dataset, cache_path=CACHE_FILE)

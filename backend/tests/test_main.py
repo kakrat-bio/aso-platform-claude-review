@@ -16,6 +16,22 @@ def client():
         yield test_client
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Specifies a gene_metadata fast path that this codebase has never "
+        "had -- no commit in the history adds the kwarg. Two of its four "
+        "assertions cannot be satisfied honestly: structuralAccessibility is "
+        "derived from the CDS sequence GC content "
+        "(_compute_aso_metrics_from_sequence), and gene_metadata carries only "
+        "counts and coordinates, so with the network forbidden there is no "
+        "sequence to compute it from; and spliceSwitches would have to become "
+        "totalTranscripts-1 here while the network path defines it as "
+        "(distinct exon counts)-1, giving one field two meanings depending on "
+        "which path ran. Implementing it means inventing both numbers. "
+        "Left failing on purpose -- see docs/planning/model_training_results.md."
+    ),
+)
 def test_get_aso_analysis_uses_gene_metadata_without_network(monkeypatch):
     def fail_ensembl_get(*args, **kwargs):
         raise AssertionError("Network lookup should not be attempted when gene metadata is present")
@@ -35,6 +51,19 @@ def test_get_aso_analysis_uses_gene_metadata_without_network(monkeypatch):
     assert result["transcriptSpecificity"] == "95 isoforms (Low)"
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Asks the endpoint to emit activeIsoforms=1, spliceSwitches=0 and a "
+        "truthy structuralAccessibility when the ASO analysis TIMES OUT. "
+        "Those would be fabricated values presented in the same fields as "
+        "measured ones, with nothing marking them as a fallback -- the same "
+        "defect class as the hash()-derived binding affinities and the "
+        "always-True feature placeholders removed elsewhere in this review. "
+        "On timeout _run_sync correctly returns {} and the fields stay None. "
+        "Left failing on purpose -- see docs/planning/model_training_results.md."
+    ),
+)
 def test_initialize_target_uses_generic_aso_fallback_for_any_gene_when_analysis_times_out(monkeypatch, client):
     def fake_get_gene_metadata(symbol, species):
         return {
@@ -90,9 +119,6 @@ def test_initialize_target_uses_generic_aso_fallback_for_any_gene_when_analysis_
     async def fake_get_dbsnp_count(*args, **kwargs):
         return 1212
 
-    async def fake_get_top_dbsnp_id(*args, **kwargs):
-        return None
-
     async def fake_fetch_ncbi_aliases(*args, **kwargs):
         return []
 
@@ -142,7 +168,6 @@ def test_initialize_target_uses_generic_aso_fallback_for_any_gene_when_analysis_
     monkeypatch.setattr(main_module, "fetch_expression_details", fake_fetch_expression_details)
     monkeypatch.setattr(main_module, "get_clinvar_count", fake_get_clinvar_count)
     monkeypatch.setattr(main_module, "get_dbsnp_count", fake_get_dbsnp_count)
-    monkeypatch.setattr(main_module, "get_top_dbsnp_id", fake_get_top_dbsnp_id)
     monkeypatch.setattr(main_module, "fetch_ncbi_aliases", fake_fetch_ncbi_aliases)
     monkeypatch.setattr(main_module, "get_gene_enrichment", fake_get_gene_enrichment)
     monkeypatch.setattr(main_module, "get_human_constraint_metrics", fake_get_human_constraint_metrics)
@@ -232,9 +257,6 @@ def test_initialize_target_preserves_aso_metrics_when_analysis_is_slow(monkeypat
     async def fake_get_dbsnp_count(*args, **kwargs):
         return 754712
 
-    async def fake_get_top_dbsnp_id(*args, **kwargs):
-        return None
-
     async def fake_fetch_ncbi_aliases(*args, **kwargs):
         return []
 
@@ -296,7 +318,6 @@ def test_initialize_target_preserves_aso_metrics_when_analysis_is_slow(monkeypat
     monkeypatch.setattr(main_module, "fetch_expression_details", fake_fetch_expression_details)
     monkeypatch.setattr(main_module, "get_clinvar_count", fake_get_clinvar_count)
     monkeypatch.setattr(main_module, "get_dbsnp_count", fake_get_dbsnp_count)
-    monkeypatch.setattr(main_module, "get_top_dbsnp_id", fake_get_top_dbsnp_id)
     monkeypatch.setattr(main_module, "fetch_ncbi_aliases", fake_fetch_ncbi_aliases)
     monkeypatch.setattr(main_module, "get_gene_enrichment", fake_get_gene_enrichment)
     monkeypatch.setattr(main_module, "get_human_constraint_metrics", fake_get_human_constraint_metrics)
