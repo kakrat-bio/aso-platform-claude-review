@@ -325,9 +325,16 @@ def get_isoform_engineering_design_options() -> dict[str, Any]:
         "isoformGoals": [
             {"id": "exon_skipping", "label": "Exon Skipping", "description": "Skip a specific exon to restore the reading frame or remove a toxic domain."},
             {"id": "exon_inclusion", "label": "Exon Inclusion", "description": "Force inclusion of a beneficial exon that is normally skipped."},
-            {"id": "intron_retention", "label": "Intron Retention", "description": "Retain a specific intron to introduce a premature stop codon for NMD-mediated silencing."},
+            {"id": "intron_retention", "label": "Intron Retention", "description": "Retain a specific intron to trigger NMD, encode a micropeptide, or produce a regulatory RNA (A33)."},
             {"id": "alternative_splice_site", "label": "Alternative Splice Site Selection", "description": "Redirect splicing to an alternative splice site to generate a different isoform."},
             {"id": "mutually_exclusive_exon", "label": "Mutually Exclusive Exon Switch", "description": "Switch between mutually exclusive exons to favor a therapeutically beneficial isoform."},
+            # Added with the TG07 restoration. Both currently HALT: their
+            # reference tables (alternative promoters / intron-retention
+            # potential, and the per-gene benefit curation each needs) ship
+            # header-only, so the mechanism reports that it cannot establish
+            # its evidence rather than scoring on an assumption.
+            {"id": "apa_modulation", "label": "Alternative Polyadenylation (APA) Shift", "description": "Shift poly(A) site usage to change the 3' end of the transcript and the isoform it produces (A11)."},
+            {"id": "alt_promoter_switch", "label": "Alternative Promoter Switch", "description": "Shift transcription start site selection to favour a different promoter-derived isoform (A32)."},
         ],
         "targetExonLoci": [
             {"id": "exon_7", "label": "Exon 7"},

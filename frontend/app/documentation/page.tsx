@@ -548,43 +548,44 @@ const GOALS: TherapeuticGoalSection[] = [
     badgeTone: "bg-orange-100 text-orange-700",
     mechanisms: [
       {
-        code: "A23",
-        name: "Small Activating RNA (saRNA)-Mediated Transcriptional Activation",
-        description:
-          "Double-stranded saRNAs target promoter-associated transcripts or promoter regions, recruiting AGO proteins and transcriptional regulatory complexes to enhance transcription of the endogenous gene. Activates gene expression at the DNA level without permanent genome modification.",
-        targetRegion: "Promoter-associated RNA (paRNA) / TSS",
-        modality: "21-mer dsRNA Duplex",
-        clinicalExample: "MTL-CEBPA (clinical development for liver cancer)",
-        tone: "indigo",
-      },
-      {
-        code: "A24",
-        name: "Messenger RNA (mRNA) Replacement Therapy",
-        description:
-          "Exogenous mRNA is delivered into the cytoplasm, translated by host ribosomes into the therapeutic protein, thereby restoring or supplementing endogenous protein function without altering genomic DNA. No genomic integration; rapid protein expression.",
-        targetRegion: "N/A (delivered transcript)",
-        modality: "Synthetic mRNA (1–5 kb, modified nucleosides)",
-        clinicalExample: "Comirnaty; Spikevax",
-        tone: "emerald",
-      },
-      {
         code: "A25",
         name: "RNA Aptamer Therapeutics",
         description:
           "RNA aptamers fold into defined three-dimensional structures that bind target proteins with high affinity and specificity, preventing ligand binding, receptor activation, or protein function. High specificity; reversible activity; relatively low immunogenicity.",
-        targetRegion: "Extracellular or intracellular target protein",
+        targetRegion: "Extracellular or cell-surface target protein",
         modality: "RNA aptamer (20–100 nt)",
         clinicalExample: "Pegaptanib (AMD)",
         tone: "amber",
       },
       {
-        code: "A26",
-        name: "Circular RNA (circRNA)-Mediated Protein Replacement",
+        code: "A37",
+        name: "Allosteric RNA Aptamer",
         description:
-          "Synthetic circular RNAs enter the cytoplasm and are translated into therapeutic proteins through cap-independent translation. The circular topology confers resistance to exonuclease degradation, resulting in prolonged protein production compared with linear mRNA.",
-        targetRegion: "N/A (delivered circRNA)",
-        modality: "Circular RNA (1–5 kb, IRES-mediated translation)",
-        tone: "teal",
+          "An aptamer selected against an allosteric site rather than the active site, modulating protein activity by shifting conformational equilibrium instead of blocking the catalytic pocket directly.",
+        targetRegion: "Allosteric site on the target protein",
+        modality: "RNA aptamer (20–100 nt)",
+        clinicalExample: "None — flagged, not scored",
+        tone: "indigo",
+      },
+      {
+        code: "A38",
+        name: "Aptamer–Drug Conjugate (ApDC)",
+        description:
+          "An aptamer against an internalising cell-surface receptor carries a cytotoxic or oligonucleotide payload, giving cell-type-selective delivery analogous to an antibody–drug conjugate.",
+        targetRegion: "Internalising cell-surface receptor",
+        modality: "RNA aptamer + conjugated payload",
+        clinicalExample: "None — flagged, not scored",
+        tone: "emerald",
+      },
+      {
+        code: "A39",
+        name: "Bifunctional RNA Aptamer",
+        description:
+          "A single construct engaging two targets — for example bridging an effector cell to a tumour antigen, or simultaneously blocking two receptors on one pathway.",
+        targetRegion: "Two distinct target proteins",
+        modality: "Chimeric RNA aptamer",
+        clinicalExample: "None — flagged, not scored",
+        tone: "purple",
       },
     ],
   },

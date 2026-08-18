@@ -54,6 +54,7 @@ export default function RnaEngineeringPage() {
   const [ranking, setRanking] = useState<any>(null);
   const [candidates, setCandidates] = useState<RnaEngineeringCandidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<RnaEngineeringCandidate | null>(null);
+  const [protocolNotice, setProtocolNotice] = useState<"selex" | "synthesis" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -546,35 +547,28 @@ export default function RnaEngineeringPage() {
                       </div>
                     </div>
 
-                    {/* Mutational Sensitivity Heatmap */}
+                    {/* Mutational tolerance is not computed.
+                        This was a per-base heatmap coloured by Math.random(),
+                        redrawn differently on every render while presenting
+                        as a structural analysis. Determining which positions
+                        tolerate substitution requires either a SELEX
+                        mutational scan or a folding-perturbation study, and
+                        neither is wired. */}
                     <div>
-                      <h3 className="text-[12px] font-semibold text-slate-700 mb-2">Structural Mutation Tolerance Score</h3>
+                      <h3 className="text-[12px] font-semibold text-slate-700 mb-2">
+                        Structural Mutation Tolerance
+                      </h3>
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex flex-wrap gap-1">
-                          {selectedCandidate.sequence.split("").map((base, idx) => {
-                            const tolerance = Math.random();
-                            const color =
-                              tolerance > 0.7
-                                ? "bg-emerald-200 border-emerald-300"
-                                : tolerance > 0.4
-                                  ? "bg-amber-200 border-amber-300"
-                                  : "bg-red-200 border-red-300";
-                            return (
-                              <div
-                                key={idx}
-                                title={`Position ${idx + 1}: ${base} — Tolerance ${(tolerance * 100).toFixed(0)}%`}
-                                className={`flex h-8 w-8 items-center justify-center rounded border text-[10px] font-bold ${color} text-slate-700`}
-                              >
-                                {base}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-500">
-                          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded bg-emerald-200 border border-emerald-300"></span> Open for modification (&gt;70%)</span>
-                          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded bg-amber-200 border border-amber-300"></span> Moderate (40–70%)</span>
-                          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded bg-red-200 border border-red-300"></span> Invariant (&lt;40%)</span>
-                        </div>
+                        <p className="text-[11.5px] leading-relaxed text-slate-600">
+                          Not computed. Per-position mutation tolerance comes
+                          from a SELEX mutational scan or a systematic
+                          folding-perturbation study; neither is wired here.
+                        </p>
+                        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                          The previous version of this panel coloured each base
+                          from a random draw, so it changed on every render
+                          while looking like an analysis.
+                        </p>
                       </div>
                     </div>
 
@@ -635,18 +629,50 @@ export default function RnaEngineeringPage() {
                       Export Dot-Bracket Notation
                     </button>
                     <button
-                      onClick={() => alert("SELEX / Binding Assay protocol generation is under development.")}
+                      onClick={() => setProtocolNotice("selex")}
                       className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                     >
                       <FlaskConical className="h-4 w-4" />
                       Generate SELEX / Binding Assay Protocol
                     </button>
                     <button
-                      onClick={() => alert("Synthesis & Chemical Stabilization protocol generation is under development.")}
+                      onClick={() => setProtocolNotice("synthesis")}
                       className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-[13.5px] font-medium text-white shadow-sm transition-colors hover:bg-brand-dark"
                     >
                       Proceed to Synthesis & Chemical Stabilization
                     </button>
+                    {protocolNotice && (
+                      <div className="mt-3 rounded border border-sky-200 bg-sky-50 px-3 py-2 text-[11.5px] leading-snug text-sky-900">
+                        {protocolNotice === "selex" ? (
+                          <>
+                            <strong>SELEX / binding assay.</strong> Not
+                            generated here. Aptamer selection is a wet-lab
+                            campaign — iterative rounds of binding, partition
+                            and amplification against the purified target —
+                            and its parameters depend on the target protein,
+                            not on anything this page holds. Reference the A25
+                            rulebook&apos;s design rules for the published
+                            protocol family.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Synthesis &amp; stabilization.</strong> Not
+                            generated here. The chemistry choices shown in the
+                            form (2&apos;-F pyrimidine, 2&apos;-OMe/PS stems,
+                            inverted abasic cap) are the documented
+                            stabilisation options; the schedule that applies
+                            depends on the selected aptamer sequence, which
+                            SELEX has to produce first.
+                          </>
+                        )}
+                        <button
+                          onClick={() => setProtocolNotice(null)}
+                          className="ml-2 underline underline-offset-2"
+                        >
+                          dismiss
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </Card>
               )}

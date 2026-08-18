@@ -270,6 +270,109 @@ def _get_ensembl_cds(gene_symbol: str, organism: str = "homo_sapiens") -> tuple[
     return "", "N/A", "N/A"
 
 
+# Published TLR-activation reduction factors for modified nucleosides.
+# m1-pseudouridine and 5-methylcytidine+pseudouridine both suppress innate
+# immune sensing of synthetic mRNA; these are the reduction factors the TG08
+# spec supplies, applied multiplicatively to the base TLR scores.
+#
+# The base scores themselves are U-content heuristics, not assays, so the
+# product is a heuristic too — it is reported under `diagnostics` alongside
+# the modification that produced it rather than as a measurement.
+MODIFICATION_EFFECTS: dict[str, dict[str, float]] = {
+    "unmodified": {"tlr_reduction": 1.0, "stability_multiplier": 1.0,
+                   "translation_boost": 1.0},
+    "m1psi": {"tlr_reduction": 0.1, "stability_multiplier": 1.3,
+              "translation_boost": 1.2},
+    "5mc_psi": {"tlr_reduction": 0.15, "stability_multiplier": 1.25,
+                "translation_boost": 1.15},
+}
+
+
+def _apply_modification_effects(tlr_scores: dict, modification: str) -> dict:
+    """Scale TLR scores by the chosen nucleotide modification.
+
+    m1-pseudouridine reduces TLR3/7/8 activation by roughly 90%;
+    5-methylcytidine with pseudouridine by roughly 85%. An unrecognised
+    modification is treated as unmodified rather than assumed beneficial.
+    """
+    effects = MODIFICATION_EFFECTS.get(modification, MODIFICATION_EFFECTS["unmodified"])
+    return {k: round(v * effects["tlr_reduction"], 3) for k, v in tlr_scores.items()}
+
+
+def _fold_sequence(seq: str) -> tuple[str, float]:
+    """Real ViennaRNA fold. Returns (dot_bracket, mfe).
+
+    Returns ("", 0.0) when ViennaRNA is unavailable or the sequence is empty,
+    so callers can report the structure as not computed rather than draw a
+    procedural pattern that looks like one.
+    """
+    if not seq:
+        return "", 0.0
+    try:
+        import RNA
+    except ImportError:
+        return "", 0.0
+    structure, mfe = RNA.fold(seq.upper().replace("T", "U"))
+    return structure, float(mfe)
+
+
+def _calc_amino_acid_identity(optimized_cds: str, native_cds: str) -> float | None:
+    """Protein-level identity between the optimised and native CDS.
+
+    Synonymous codon optimisation should give 100.0; anything less means the
+    optimiser changed an amino acid, which is exactly what this field exists
+    to catch. Returns None when there is no native CDS to compare against —
+    the previous hardcoded 100.0 asserted a match that had not been checked.
+    """
+    if not optimized_cds or not native_cds:
+        return None
+    opt_aa = "".join(_codon_to_aa(optimized_cds[i:i + 3])
+                     for i in range(0, len(optimized_cds) - 2, 3))
+    nat_aa = "".join(_codon_to_aa(native_cds[i:i + 3])
+                     for i in range(0, len(native_cds) - 2, 3))
+    if not nat_aa:
+        return None
+    matches = sum(1 for a, b in zip(opt_aa, nat_aa) if a == b)
+    return round(100.0 * matches / max(len(opt_aa), len(nat_aa)), 1)
+
+
+def _evaluate_utr_structure(utr5_sequence: str) -> dict:
+    """Does 5' UTR structure obstruct ribosome scanning?
+
+    A stable hairpin in the 5' UTR impedes the scanning 43S complex. The
+    thresholds below are the ones the TG08 spec specifies; they are de-novo
+    cut points on a real computed MFE, not a calibrated model, and the
+    returned `mfe` is the quantity to trust.
+
+    Returns flag "NOT_COMPUTED" when there is no UTR or no ViennaRNA, rather
+    than the previous unconditional "PASSED" — which asserted a clean scan
+    for every construct including ones whose UTR was never examined.
+    """
+    if not utr5_sequence:
+        return {"flag": "NOT_COMPUTED", "mfe": None, "hairpins": None,
+                "structure": None,
+                "note": "No 5' UTR sequence was available to fold."}
+    structure, mfe = _fold_sequence(utr5_sequence)
+    if not structure:
+        return {"flag": "NOT_COMPUTED", "mfe": None, "hairpins": None,
+                "structure": None,
+                "note": "ViennaRNA unavailable; 5' UTR structure not computed."}
+    if mfe > -15:
+        flag = "PASSED"
+    elif mfe > -25:
+        flag = "CAUTION"
+    else:
+        flag = "BLOCKED"
+    return {
+        "flag": flag,
+        "mfe": round(mfe, 2),
+        "hairpins": structure.count("("),
+        "structure": structure,
+        "note": ("Thresholds -15 / -25 kcal/mol are de-novo cut points on a "
+                 "real ViennaRNA MFE, not a calibrated model."),
+    }
+
+
 def _fetch_real_utrs(gene_symbol: str, organism: str = "homo_sapiens") -> dict | None:
     """Real 5' and 3' UTR sequences for the canonical transcript.
 
@@ -464,6 +567,15 @@ def generate_protein_replacement_candidates(
             gc_content = _calc_gc_content(full_seq)
             mfe = _calc_mfe(full_seq[: min(len(full_seq), 200)])
             tlr = _estimate_tlr_risk(u_content, gc_content)
+            utr_structure = _evaluate_utr_structure(utr5)
+            tlr_scores = _apply_modification_effects(
+                {
+                    "tlr3Score": round(max(1, min(30, u_content * 0.8)), 1),
+                    "tlr7Score": round(max(1, min(25, u_content * 0.6)), 1),
+                    "tlr8Score": round(max(1, min(25, u_content * 0.7)), 1),
+                },
+                nucleotide_modification,
+            )
             initiation = _estimate_initiation_efficiency(cai, u_content)
             yield_label = _estimate_protein_yield(cai, initiation, modality)
 
@@ -494,7 +606,8 @@ def generate_protein_replacement_candidates(
                 "predictedProteinYield": yield_label,
                 "tlrRisk": tlr,
                 "signalPeptideStatus": "N-Terminal IgK Added" if modality == "circrna" else "Native Signal Peptide",
-                "secondaryStructureFlag": "PASSED",
+                "secondaryStructureFlag": utr_structure["flag"],
+                "secondaryStructure": utr_structure,
                 "fivePrimeUtrLength": var["five_utr"],
                 "orfLength": orf_length,
                 "threePrimeUtrLength": var["three_utr"],
@@ -505,12 +618,26 @@ def generate_protein_replacement_candidates(
                 "sequence": full_seq,
                 "features": _build_features(modality, utr_pair, ires_selection),
                 "diagnostics": {
-                    "aminoAcidIdentity": 100.0,
-                    "tlr3Score": round(max(1, min(30, u_content * 0.8)), 1),
-                    "tlr7Score": round(max(1, min(25, u_content * 0.6)), 1),
-                    "tlr8Score": round(max(1, min(25, u_content * 0.7)), 1),
-                    "mfePlot": ".".join(["(" if i % 7 < 3 else ")" if i % 7 > 4 else "." for i in range(80)]),
-                    "fiveUtrHairpin": False,
+                    # None when there is no native CDS to compare against.
+                    # The previous hardcoded 100.0 asserted a match nobody
+                    # had checked.
+                    "aminoAcidIdentity": _calc_amino_acid_identity(
+                        optimized_cds, cds_clean),
+                    **tlr_scores,
+                    "tlrModification": nucleotide_modification,
+                    "tlrProvenance": (
+                        "U-content heuristic scaled by published modification "
+                        "reduction factors. Not an assay."
+                    ),
+                    # Real dot-bracket from ViennaRNA over the 5' UTR, or
+                    # None. The previous value was a procedural pattern
+                    # (i % 7) that rendered as a structure.
+                    "mfePlot": utr_structure.get("structure"),
+                    "mfe": utr_structure.get("mfe"),
+                    "fiveUtrHairpin": (
+                        None if utr_structure.get("hairpins") is None
+                        else utr_structure["hairpins"] > 0
+                    ),
                 },
             })
             rank += 1
