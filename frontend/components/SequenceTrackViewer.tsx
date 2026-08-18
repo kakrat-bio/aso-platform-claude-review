@@ -31,7 +31,8 @@ interface MiRNATarget {
   seedSequence: string;
   start: number;
   end: number;
-  bindingScore: number;
+  bindingScore: number | null;
+  seedGcContent?: number;
   conservationNote: string;
 }
 
@@ -248,13 +249,13 @@ export default function SequenceTrackViewer({
           height={TRACK_H}
           rx={2}
           fill={MIRNA_COLOR}
-          opacity={0.5 + target.bindingScore * 0.4}
+          opacity={0.7}
           className="cursor-pointer"
           onMouseEnter={(e) =>
             showTip(
               e.clientX,
               e.clientY,
-              `${target.mirnaId} seed:${target.seedSequence} @ ${target.start}–${target.end} (score: ${target.bindingScore.toFixed(2)})`
+              `${target.mirnaId} seed:${target.seedSequence} @ ${target.start}–${target.end} (seed GC: ${((target.seedGcContent ?? 0) * 100).toFixed(0)}%)`
             )
           }
           onMouseLeave={() => setTooltip(null)}

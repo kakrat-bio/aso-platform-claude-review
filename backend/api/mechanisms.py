@@ -18,8 +18,8 @@ docs/planning/therapeutic_goal_scope_plan_v3.md):
 - TG05 RNA Neutralization          narrow   A14 (halts pending F12)
 - TG06 Translational Regulation    scored   A2, A5, A6, A27, A29, A30, A31
 - TG07 Isoform Engineering         scored   A7-A11, A32, A33 (A11 dual-tagged)
-- TG08 Protein Replacement         flag only; A24, A26 never scored
-- TG09 Protein Function Modulation flag only; A25 never scored
+- TG08 Protein Replacement         flag only; A24, A26, A34-A36 never scored
+- TG09 Protein Function Modulation flag only; A25, A37-A39 never scored
 
 Four mechanism states, and only the last is absence — nothing is in it:
 
@@ -28,6 +28,13 @@ Four mechanism states, and only the last is absence — nothing is in it:
   HALTED                         in the choice set, required feature absent
   FLAGGED                        surfaced qualitatively, never scored
   REMOVED                        nothing
+
+Flagged mechanisms are returned in `flaggedMechanisms`, ALWAYS — not only
+when a modality flag fires. A flag needs tissue expression or subcellular
+localisation, inputs the pages do not collect, so gating visibility on one
+made all nine invisible in the case where they matter most. They carry a
+null applicability, confidence and score so nothing can rank them against a
+scored mechanism.
 
 A21 is scored despite being undesignable here because siRNA is a genuine
 alternative to RNase H knockdown and five approved drugs make it fully
@@ -51,6 +58,7 @@ from services.mechanism_arbitration import (
     therapeutic_goals,
 )
 from services.mechanism_service import (
+    _flagged_for_goal,
     rank_gene_silencing_mechanisms,
     rank_gene_upregulation_mechanisms,
     rank_rna_processing_mechanisms,
@@ -524,6 +532,7 @@ async def rna_engineering_mechanisms(payload: RnaEngineeringRequest):
         "therapeuticGoal": "Protein Function Modulation",
         "status": "FLAGGED",
         "goalNotice": RETIRED_AS_SCORING_PARTITION["TG09"],
+        "flaggedMechanisms": lookup.get("mechanisms", []),
         "inputs": {
             "structuralClass": payload.structural_class,
             "targetType": payload.target_type,

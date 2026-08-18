@@ -16,7 +16,8 @@ interface MiRNATarget {
   seedSequence: string;
   start: number;
   end: number;
-  bindingScore: number;
+  bindingScore: number | null;
+  seedGcContent?: number;
   conservationNote: string;
 }
 
@@ -125,7 +126,7 @@ export default function FeatureTable({
         start: t.start,
         end: t.end,
         length: t.end - t.start + 1,
-        score: t.bindingScore,
+        score: t.seedGcContent ?? null,
         strand: "+",
         details: `seed: ${t.seedSequence}`,
       })

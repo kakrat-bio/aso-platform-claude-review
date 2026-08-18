@@ -88,7 +88,10 @@ export interface MiRNATarget {
   seedSequence: string;
   start: number;
   end: number;
-  bindingScore: number;
+  /** null — no TargetScan context++ scoring is wired (F7). */
+  bindingScore: number | null;
+  /** GC fraction of the matched seed motif. Real. */
+  seedGcContent?: number;
   conservationNote: string;
 }
 

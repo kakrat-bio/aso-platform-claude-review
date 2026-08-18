@@ -646,26 +646,47 @@ export default function UploadSequencePage() {
       }
     }
 
-    // --- miRNA seed-region targets (common seed 6-mers) ---
+    // --- miRNA seed-motif matches -------------------------------------
+    // These are exact string matches for common seed hexamers. They are NOT
+    // miRNA target predictions:
+    //   * the motifs are a fixed generic list, not a miRBase query
+    //   * the previous "miR-seed-N" labels were invented identifiers that
+    //     read as specific miRNAs
+    //   * the previous bindingScore was
+    //       0.5 + gc/200 + Math.random() * 0.15
+    //     i.e. mostly noise, rendered as a percentage bar and sorted on
+    //
+    // Real target prediction needs TargetScan context++ scoring (feature F7),
+    // which is not wired. What is reported here is exactly what was measured:
+    // a motif, where it occurs, and its GC content.
     const SEED_HEXA_MERS = [
       "AACCCU", "AGCACCA", "GGAGCUA", "UAAGGCA", "CUCCAGA",
       "GAGGUUG", "UGCACUU", "AACAGUC", "GGCUGCA", "UCUACAG",
       "AAUGCCC", "UUCCGGA", "CCAGUGA", "GGCUGAU", "AUUGCCU",
     ];
-    const mirnaTargets: { mirnaId: string; seedSequence: string; start: number; end: number; bindingScore: number; conservationNote: string }[] = [];
+    const mirnaTargets: {
+      mirnaId: string;
+      seedSequence: string;
+      start: number;
+      end: number;
+      bindingScore: number | null;
+      seedGcContent: number;
+      conservationNote: string;
+    }[] = [];
     for (let si = 0; si < SEED_HEXA_MERS.length && mirnaTargets.length < 15; si++) {
       const seed = SEED_HEXA_MERS[si];
       for (let i = 0; i <= length - seed.length; i++) {
         if (seq.slice(i, i + seed.length) === seed) {
-          const gc = _gc(seed);
-          const score = Math.round((0.5 + gc / 200 + Math.random() * 0.15) * 100) / 100;
           mirnaTargets.push({
-            mirnaId: `miR-seed-${si + 1}`,
+            mirnaId: `seed motif ${si + 1}`,
             seedSequence: seed,
             start: i + 1,
             end: i + seed.length,
-            bindingScore: Math.min(score, 0.99),
-            conservationNote: "Seed complementarity only; no expression context",
+            bindingScore: null,
+            seedGcContent: Math.round(_gc(seed) * 100) / 100,
+            conservationNote:
+              "Exact seed-motif match only. Not a miRNA target prediction — " +
+              "no TargetScan context++ scoring is wired (feature F7).",
           });
           break;
         }

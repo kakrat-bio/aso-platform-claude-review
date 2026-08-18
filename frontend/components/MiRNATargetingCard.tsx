@@ -7,7 +7,8 @@ interface MiRNATarget {
   seedSequence: string;
   start: number;
   end: number;
-  bindingScore: number;
+  bindingScore: number | null;
+  seedGcContent?: number;
   conservationNote: string;
 }
 
@@ -64,7 +65,9 @@ export default function MiRNATargetingCard({
   const xScale = (pos: number) =>
     PAD.left + (pos / seqLength) * plotW;
 
-  const sortedTargets = [...targets].sort((a, b) => b.bindingScore - a.bindingScore);
+  // Ordered by position. Sorting by strength would need a score, and none
+  // is computed.
+  const sortedTargets = [...targets].sort((a, b) => a.start - b.start);
 
   return (
     <>
@@ -107,9 +110,9 @@ export default function MiRNATargetingCard({
             const x2 = xScale(t.end);
             const w = Math.max(x2 - x1, 3);
             const color =
-              t.bindingScore >= 0.8
+              false
                 ? "#10b981"
-                : t.bindingScore >= 0.5
+                : false
                 ? "#f59e0b"
                 : "#ef4444";
             return (
@@ -127,7 +130,7 @@ export default function MiRNATargetingCard({
                   setTooltip({
                     x: e.clientX,
                     y: e.clientY,
-                    text: `${t.mirnaId} — seed: ${t.seedSequence} @ ${t.start}-${t.end} (score: ${t.bindingScore.toFixed(2)})`,
+                    text: `${t.mirnaId} — seed: ${t.seedSequence} @ ${t.start}-${t.end} (seed GC: ${((t.seedGcContent ?? 0) * 100).toFixed(0)}%)`,
                   })
                 }
                 onMouseLeave={() => setTooltip(null)}
@@ -167,9 +170,9 @@ export default function MiRNATargetingCard({
         {sortedTargets.slice(0, 10).map((t, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] ${scoreBg(t.bindingScore)} border border-slate-100`}
+            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] ${"bg-slate-50"} border border-slate-100`}
           >
-            <span className={`font-mono font-semibold ${scoreTextColor(t.bindingScore)} shrink-0`}>
+            <span className={`font-mono font-semibold ${"text-slate-600"} shrink-0`}>
               {t.mirnaId}
             </span>
             <span className="font-mono text-slate-500 shrink-0">
@@ -181,13 +184,13 @@ export default function MiRNATargetingCard({
             <div className="flex-1 min-w-[60px]">
               <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${scoreColor(t.bindingScore)} transition-all`}
-                  style={{ width: `${t.bindingScore * 100}%` }}
+                  className={`h-full rounded-full ${"bg-slate-300"} transition-all`}
+                  style={{ width: `${(t.seedGcContent ?? 0) * 100}%` }}
                 />
               </div>
             </div>
             <span className="font-mono font-semibold text-slate-600 shrink-0 w-8 text-right">
-              {(t.bindingScore * 100).toFixed(0)}%
+              {((t.seedGcContent ?? 0) * 100).toFixed(0)}% GC
             </span>
           </div>
         ))}

@@ -267,6 +267,20 @@ RNA_ENGINEERING_K_D_GOALS = {
 # Shared plumbing
 # ---------------------------------------------------------------------------
 
+def _flagged_for_goal(ctx: ArbitrationContext, goal: str) -> list[dict]:
+    """Flag-only mechanisms tagged with this goal.
+
+    Returned alongside the ranking, never inside it. Without this a
+    goal-routed page shows nothing at all for TG08 and TG09, whose every
+    mechanism is flag_only — being unscorable is not a reason to be
+    unlistable.
+    """
+    ctx.goal_filter = None
+    out = arbitrate(ctx)
+    return [m for m in out.get("flaggedMechanisms", [])
+            if goal in (m.get("goalTags") or [])]
+
+
 def _filtered(ctx: ArbitrationContext, goal: str,
               restrict_to: list[str] | None = None) -> list[dict]:
     """Run the unified arbitration, then keep the goal's mechanisms.

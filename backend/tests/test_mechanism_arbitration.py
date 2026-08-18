@@ -557,3 +557,46 @@ def test_aptamer_candidates_carry_no_fabricated_numbers():
         assert cand["scored"] is False
         # Guidance is a string about what SELEX would determine, not a number.
         assert isinstance(cand["kdPrediction"], str)
+
+
+def test_flagged_mechanisms_are_always_listed_even_when_no_flag_fires():
+    """Unscorable is not a reason to be unlistable.
+
+    A24/A26/A34-A36 and A25/A37-A39 were reachable only through a raised
+    modality flag, and a flag needs tissue expression (P2) or subcellular
+    localisation (B1) — inputs the page does not collect. On a
+    haploinsufficiency case, where every transcript-acting mechanism halts and
+    protein replacement is the obvious move, all nine were invisible.
+    """
+    out = A.arbitrate(A.ArbitrationContext(
+        gene_symbol="CFTR", molecular_defect="haploinsufficiency"))
+
+    # No flag can fire without P2/B1 ...
+    assert all(not f["raised"] for f in out["modalityFlags"])
+    # ... but the mechanisms are listed regardless.
+    listed = {m["id"] for m in out["flaggedMechanisms"]}
+    assert listed == {"A24", "A25", "A26", "A34", "A35", "A36",
+                      "A37", "A38", "A39"}
+
+
+def test_flagged_mechanisms_carry_no_score_shaped_numbers():
+    """An empty applicability interval degenerates to [1.0, 1.0], which reads
+    as 'perfectly applicable' — the opposite of what FLAGGED means."""
+    out = A.arbitrate(A.ArbitrationContext(
+        gene_symbol="CFTR", molecular_defect="haploinsufficiency"))
+    for m in out["flaggedMechanisms"]:
+        assert m["status"] == A.FLAGGED
+        assert m["applicability"] is None
+        assert m["confidence"] is None
+        assert m["score"] is None
+        assert m["rationale"], "a flagged mechanism must say why it is flagged"
+
+
+def test_flagged_mechanisms_stay_out_of_the_ranking():
+    """Listed alongside, never ranked against a scored mechanism."""
+    out = A.arbitrate(A.ArbitrationContext(
+        gene_symbol="CFTR", molecular_defect="haploinsufficiency"))
+    ranked = {r["id"] for r in out["results"]}
+    flagged = {m["id"] for m in out["flaggedMechanisms"]}
+    assert not (ranked & flagged)
+    assert all(r["score"] is not None for r in out["results"])

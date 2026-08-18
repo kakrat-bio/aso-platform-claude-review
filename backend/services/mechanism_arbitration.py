@@ -683,6 +683,18 @@ def arbitrate(ctx: ArbitrationContext) -> dict:
         # Qualitative, unscored, and reported alongside rather than inside the
         # ranking. See modality_flags().
         "modalityFlags": modality_flags(results, features, flagged),
+        # ALWAYS present, whether or not a flag fired.
+        #
+        # These were only reachable through a raised flag, and a flag needs
+        # tissue expression (P2) or subcellular localisation (B1) — inputs the
+        # page does not collect. The result was that on a haploinsufficiency
+        # case, where every transcript-acting mechanism halts and protein
+        # replacement is the obvious move, all nine flagged mechanisms were
+        # invisible. Being unscorable is not a reason to be unlistable.
+        #
+        # They stay out of `results` because they carry no applicability and
+        # must never be ranked against a scored mechanism.
+        "flaggedMechanisms": flagged,
         "features": {fid: f.to_dict() for fid, f in sorted(features.items())},
         "summary": _summarise(results, features),
     }
@@ -784,6 +796,10 @@ def _score_mechanism(
 
     contributing = required + forbidden
     lower, upper = applicability_interval(required, forbidden)
+    # A flagged mechanism is not scored, so it must not carry a score-shaped
+    # number. The vacuous [1.0, 1.0] an empty interval produces reads as
+    # "perfectly applicable" — the opposite of what FLAGGED means.
+    scored_at_all = status != FLAGGED
 
     evidence_cap = _evidence_cap(rule)
     provenance_cap = min(
@@ -836,15 +852,20 @@ def _score_mechanism(
         "primaryGoal": primary,
         "primaryGoalName": (goals.get(primary) or {}).get("name"),
         "goalIsScoringPartition": primary not in RETIRED_AS_SCORING_PARTITION,
-        "applicability": {"lower": lower, "upper": upper},
-        "confidence": {"lower": confidence[0], "upper": confidence[1]},
-        "confidenceCap": round(cap, 4),
+        "applicability": (
+            {"lower": lower, "upper": upper} if scored_at_all else None
+        ),
+        "confidence": (
+            {"lower": confidence[0], "upper": confidence[1]}
+            if scored_at_all else None
+        ),
+        "confidenceCap": round(cap, 4) if scored_at_all else None,
         "evidenceLevel": rule.get("evidenceLevel"),
         "evidenceWeight": _evidence_weight(rule),
         # Single number retained for callers that need one. It is the
         # applicability upper bound, NOT a blend of applicability, confidence
         # and evidence — those stay separate on purpose.
-        "score": upper,
+        "score": upper if scored_at_all else None,
         "standInOnly": stand_in_only,
         "features": {
             "required": [f.to_dict() for f in required],
