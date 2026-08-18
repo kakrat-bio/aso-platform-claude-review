@@ -17,7 +17,8 @@ import { Card, SectionHeader } from "@/components/ui";
 import RepeatMaskingMap from "@/components/RepeatMaskingMap";
 import CandidateInspectorPanel from "@/components/CandidateInspectorPanel";
 import AsoDesignPipeline from "@/components/AsoDesignPipeline";
-import { RnaNeutralizationCandidate, RnaNeutralizationResult } from "@/types/rnaNeutralization";
+import { RnaNeutralizationCandidate, RnaNeutralizationResponse } from "@/types/rnaNeutralization";
+import { generateNeutralizationCandidates } from "@/lib/rnaNeutralizationApi";
 import { saveReport } from "@/lib/auth";
 
 const CONFIRMED_TARGET_KEY = "aso:confirmedTarget";
@@ -29,97 +30,6 @@ function complementSequence(seq: string): string {
   return seq.split("").map((c) => comp[c.toUpperCase()] || c).join("");
 }
 
-function generateMockCandidates(
-  repeatUnit: string,
-  stericChemistry: string,
-  oligoLength: number,
-  targetRbp: string
-): RnaNeutralizationCandidate[] {
-  const chemistryMap: Record<string, string> = {
-    "2-o-moe-full-ps": "2'-O-MOE Full PS",
-    pmo: "PMO",
-    "lna-dna-mixmer": "LNA/DNA Mixmer",
-  };
-  const chem = chemistryMap[stericChemistry] ?? "2'-O-MOE Full PS";
-
-  const baseSeq = Array(Math.ceil(oligoLength / repeatUnit.length) + 1)
-    .fill(repeatUnit)
-    .join("")
-    .slice(0, oligoLength)
-    .toLowerCase();
-
-  const frameShift1 = baseSeq.slice(1) + baseSeq[0];
-  const frameShift2 = baseSeq.slice(2) + baseSeq.slice(0, 2);
-
-  const candidates: Omit<RnaNeutralizationCandidate, "rank">[] = [
-    {
-      sequence: baseSeq,
-      tilingPattern: "17-mer Complementary Tiling",
-      chemistry: chem,
-      tm: 71.2,
-      stericBindingDeltaG: -28.4,
-      rbpDisplacementScore: 95,
-      repeatUnit,
-      oligoLength,
-      offTargetRepeatCount: 3,
-      rbpBindingDeltaG: -12.3,
-      asoDuplexDeltaG: -28.4,
-      hasCentralDnaGap: false,
-      centralGapSizeNt: 0,
-      selfDimerMfe: -1.8,
-      hairpinRisk: "Low",
-      gcContent: 52.9,
-      deliveryContext: "cns",
-      recommendedConjugation: "unconjugated",
-      modificationPattern: "uniform-2moess",
-    },
-    {
-      sequence: frameShift1,
-      tilingPattern: "Frame-Shifted Tiling",
-      chemistry: "PMO",
-      tm: 68.5,
-      stericBindingDeltaG: -25.1,
-      rbpDisplacementScore: 89,
-      repeatUnit,
-      oligoLength,
-      offTargetRepeatCount: 7,
-      rbpBindingDeltaG: -11.8,
-      asoDuplexDeltaG: -25.1,
-      hasCentralDnaGap: false,
-      centralGapSizeNt: 0,
-      selfDimerMfe: -2.5,
-      hairpinRisk: "Low",
-      gcContent: 47.1,
-      deliveryContext: "cns",
-      recommendedConjugation: "unconjugated",
-      modificationPattern: "full-pmo",
-    },
-    {
-      sequence: frameShift2,
-      tilingPattern: "Frame-Shifted Tiling",
-      chemistry: "LNA/DNA Mixmer",
-      tm: 76.0,
-      stericBindingDeltaG: -31.0,
-      rbpDisplacementScore: 84,
-      repeatUnit,
-      oligoLength,
-      offTargetRepeatCount: 12,
-      rbpBindingDeltaG: -13.1,
-      asoDuplexDeltaG: -31.0,
-      hasCentralDnaGap: false,
-      centralGapSizeNt: 0,
-      selfDimerMfe: -4.2,
-      hairpinRisk: "Moderate",
-      gcContent: 58.8,
-      deliveryContext: "cns",
-      recommendedConjugation: "unconjugated",
-      modificationPattern: "lnana-flank-dna-core",
-    },
-  ];
-
-  return candidates.map((c, i) => ({ ...c, rank: i + 1 }));
-}
-
 export default function RnaNeutralizationPage() {
   const router = useRouter();
 
@@ -127,7 +37,7 @@ export default function RnaNeutralizationPage() {
   const [mechanism, setMechanism] = useState<{ id: string; name: string } | null>(null);
   const [mechanismParams, setMechanismParams] = useState<Record<string, unknown> | null>(null);
 
-  const [results, setResults] = useState<RnaNeutralizationResult | null>(null);
+  const [results, setResults] = useState<RnaNeutralizationResponse | null>(null);
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
 
@@ -164,50 +74,43 @@ export default function RnaNeutralizationPage() {
   const oligoLength = (mechanismParams?.oligoLength as number) || 17;
   const targetRbp = (mechanismParams?.targetRbp as string) || "MBNL1";
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     setGenLoading(true);
     setGenError(null);
     setResults(null);
 
-    setTimeout(() => {
-      try {
-        const candidates = generateMockCandidates(
-          repeatUnit,
-          stericChemistry,
-          oligoLength,
-          targetRbp
+    try {
+      // Real candidates from the backend: ViennaRNA duplex energies and Tm
+      // computed from the actual tract. The previous implementation built
+      // these client-side from hardcoded constants.
+      const response = await generateNeutralizationCandidates({
+        geneSymbol: gene?.geneSymbol ?? "",
+        mechanismId: mechanism?.id ?? "A14",
+        neutralizationMode:
+          (mechanismParams?.neutralizationMode as string) ?? "steric_repeat_masking",
+        repeatUnit: repeatUnit || null,
+        estimatedRepeatCount:
+          (mechanismParams?.estimatedRepeatCount as string) || null,
+        oligoLength,
+        chemistry: stericChemistry,
+        deliveryContext: deliveryContext || null,
+        targetRbp: targetRbp || null,
+      });
+
+      setResults(response);
+      if (!response.candidates?.length) {
+        setGenError(
+          response.message ?? "No candidates could be designed for this target.",
         );
-
-        const result: RnaNeutralizationResult = {
-          geneSymbol: gene?.geneSymbol ?? "UNKNOWN",
-          mechanismId: mechanism?.id ?? "A14",
-          mechanismName: mechanism?.name ?? "Steric Repeat Masking",
-          molecularDefect: (mechanismParams?.molecularDefect as string) ?? "toxic_rna_gain_of_function",
-          neutralizationMode: (mechanismParams?.neutralizationMode as string) ?? "steric_repeat_masking",
-          repeatUnit,
-          estimatedRepeatCount: (mechanismParams?.estimatedRepeatCount as string) || ">50",
-          stericChemistry,
-          targetRbp,
-          oligoLength,
-          deliveryContext,
-          candidates,
-        };
-
-        setResults(result);
-        saveReport({
-          step: "rna_neutralization",
-          title: `RNA Neutralization: ${gene?.geneSymbol} — ${mechanism?.name}`,
-          geneSymbol: gene?.geneSymbol ?? "",
-          disease: "",
-          summary: `Generated ${candidates.length} steric-blocking candidates. Top displacement score: ${candidates[0]?.rbpDisplacementScore}/100.`,
-          data: { mechanismId: mechanism?.id, candidateCount: candidates.length },
-        });
-      } catch (err) {
-        setGenError(err instanceof Error ? err.message : "Generation failed.");
-      } finally {
-        setGenLoading(false);
       }
-    }, 800);
+    } catch (err) {
+      setGenError(
+        err instanceof Error ? err.message : "Could not generate candidates.",
+      );
+    } finally {
+      setGenLoading(false);
+    }
+
   }, [gene, mechanism, mechanismParams, repeatUnit, stericChemistry, oligoLength, targetRbp, deliveryContext]);
 
   function handleInspectCandidate(candidate: RnaNeutralizationCandidate) {
@@ -351,45 +254,56 @@ export default function RnaNeutralizationPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <Card className="p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Target RBP Displacement
-                  </p>
-                  <p className="mt-2 text-[28px] font-bold text-emerald-600">
-                    {results.candidates[0]?.rbpDisplacementScore}/100
-                  </p>
-                  <p className="text-[11px] text-slate-500">
-                    Top candidate competitive binding vs {targetRbp}
-                  </p>
-                </Card>
-                <Card className="p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Duplex ΔG (Top Candidate)
                   </p>
                   <p className="mt-2 text-[28px] font-bold text-indigo-600">
-                    {results.candidates[0]?.stericBindingDeltaG.toFixed(1)}
+                    {results.candidates[0]
+                      ? results.candidates[0].realMetrics.targetDuplexEnergy.toFixed(1)
+                      : "—"}
                     <span className="text-[14px] font-normal text-slate-400"> kcal/mol</span>
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Thermodynamic stability of ASO–RNA duplex
+                    ViennaRNA duplexfold, oligo against the tract
                   </p>
                 </Card>
                 <Card className="p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Off-Target Gene Repeats
+                    Repeat Unit Provenance
                   </p>
-                  <p className={`mt-2 text-[28px] font-bold ${
-                    (results.candidates[0]?.offTargetRepeatCount ?? 0) <= 5
-                      ? "text-emerald-600"
-                      : (results.candidates[0]?.offTargetRepeatCount ?? 0) <= 15
-                        ? "text-amber-600"
-                        : "text-red-600"
-                  }`}>
-                    {results.candidates[0]?.offTargetRepeatCount}
+                  <p className="mt-2 text-[15px] font-bold text-slate-700">
+                    {results.tractProvenance?.unit ?? "—"}
+                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                      {results.tractProvenance?.provenance === "confirmed"
+                        ? "Curated"
+                        : "Your input"}
+                    </span>
                   </p>
-                  <p className="text-[11px] text-slate-500">
-                    Non-pathogenic repeat loci that could bind
+                  <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                    {results.tractProvenance?.note}
                   </p>
                 </Card>
+                {/*
+                  The two cards removed here read "Target RBP Displacement
+                  n/100" and "Off-Target Gene Repeats n". Neither was
+                  computed. The off-target one was the most misleading number
+                  on the page: an oligo complementary to a (CAG)n tract is
+                  complementary to every CAG-repeat transcript by
+                  construction, so a low count implied a selectivity that had
+                  never been checked. The caveats now render below.
+                */}
               </div>
+              {results.notes?.length ? (
+                <div className="space-y-2">
+                  {results.notes.map((note, i) => (
+                    <div
+                      key={i}
+                      className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] leading-snug text-amber-900"
+                    >
+                      {note}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               {/* Repeat Masking Map */}
               <Card className="p-5">
@@ -442,35 +356,19 @@ export default function RnaNeutralizationPage() {
                               </span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-slate-700">{c.tm.toFixed(1)}°C</span>
+                              <span className="text-[12px] font-semibold text-slate-700">{c.realMetrics.meltingTempC.toFixed(1)}°C</span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-indigo-600">{c.stericBindingDeltaG.toFixed(1)}</span>
+                              <span className="text-[12px] font-semibold text-indigo-600">{c.realMetrics.targetDuplexEnergy.toFixed(1)}</span>
                             </td>
+                            {/* Was an "RBP Displacement /100" bar driven by a
+                                fabricated score. No RBP binding-affinity model
+                                is wired, so the melting temperature — which is
+                                computed — takes its place. */}
                             <td className="py-3 pr-3">
-                              <div className="flex items-center gap-2">
-                                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
-                                  <div
-                                    className={`h-full rounded-full ${
-                                      c.rbpDisplacementScore >= 90
-                                        ? "bg-emerald-400"
-                                        : c.rbpDisplacementScore >= 70
-                                          ? "bg-blue-400"
-                                          : "bg-amber-400"
-                                    }`}
-                                    style={{ width: `${c.rbpDisplacementScore}%` }}
-                                  />
-                                </div>
-                                <span className={`text-[12px] font-bold ${
-                                  c.rbpDisplacementScore >= 90
-                                    ? "text-emerald-600"
-                                    : c.rbpDisplacementScore >= 70
-                                      ? "text-blue-600"
-                                      : "text-amber-600"
-                                }`}>
-                                  {c.rbpDisplacementScore}
-                                </span>
-                              </div>
+                              <span className="text-[12px] font-medium text-slate-700">
+                                {c.realMetrics.meltingTempC.toFixed(1)}°C
+                              </span>
                             </td>
                             <td className="py-3">
                               <div className="flex items-center gap-1.5">
@@ -533,9 +431,9 @@ export default function RnaNeutralizationPage() {
                   {finalDesign.candidate.sequence}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-500">
-                  <span>Tm: {finalDesign.candidate.tm.toFixed(1)}°C</span>
-                  <span>ΔG: {finalDesign.candidate.stericBindingDeltaG.toFixed(1)} kcal/mol</span>
-                  <span>RBP Displacement: {finalDesign.candidate.rbpDisplacementScore}/100</span>
+                  <span>Tm: {finalDesign.candidate.realMetrics.meltingTempC.toFixed(1)}°C</span>
+                  <span>ΔG: {finalDesign.candidate.realMetrics.targetDuplexEnergy.toFixed(1)} kcal/mol</span>
+                  <span>GC: {(finalDesign.candidate.realMetrics.gcContent * 100).toFixed(0)}%</span>
                   <span>Non-cleaving: Confirmed</span>
                 </div>
               </div>

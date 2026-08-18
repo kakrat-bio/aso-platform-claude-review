@@ -80,7 +80,7 @@ export default function AsoDesignPipeline({
       modifications: selectedModPattern ? [selectedModPattern] : [],
       conjugation: selectedConjugation,
       secondaryStructurePassed: secondaryChecked,
-      selfDimerPassed: candidate.selfDimerMfe > -3,
+      selfDimerPassed: candidate.realMetrics.selfStructureMfe > -3,
     });
   }
 
@@ -234,13 +234,13 @@ export default function AsoDesignPipeline({
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-medium text-slate-700">Hairpin Structure Prediction</span>
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                candidate.hairpinRisk === "Low"
+                false
                   ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                  : candidate.hairpinRisk === "Moderate"
+                  : false
                     ? "bg-amber-50 text-amber-600 border border-amber-200"
                     : "bg-red-50 text-red-600 border border-red-200"
               }`}>
-                {candidate.hairpinRisk} Risk
+                {"not computed"} Risk
               </span>
             </div>
 
@@ -250,13 +250,13 @@ export default function AsoDesignPipeline({
               <span className="text-slate-400">{candidate.sequence}</span>
               <br />
               <span className="text-amber-400">(((...)))</span>
-              <span className="text-slate-500">  ({candidate.selfDimerMfe.toFixed(2)} kcal/mol)</span>
+              <span className="text-slate-500">  ({candidate.realMetrics.selfStructureMfe.toFixed(2)} kcal/mol)</span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-medium text-slate-700">Self-Dimer MFE Threshold</span>
-              <span className={`text-[12px] font-semibold ${candidate.selfDimerMfe > -3 ? "text-emerald-600" : "text-amber-600"}`}>
-                {candidate.selfDimerMfe.toFixed(1)} kcal/mol {candidate.selfDimerMfe > -3 ? "✓ (> -3 threshold)" : "⚠ (at risk)"}
+              <span className={`text-[12px] font-semibold ${candidate.realMetrics.selfStructureMfe > -3 ? "text-emerald-600" : "text-amber-600"}`}>
+                {candidate.realMetrics.selfStructureMfe.toFixed(1)} kcal/mol {candidate.realMetrics.selfStructureMfe > -3 ? "✓ (> -3 threshold)" : "⚠ (at risk)"}
               </span>
             </div>
 

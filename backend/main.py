@@ -39,6 +39,7 @@ try:  # ``uvicorn backend.main:app`` from the repository root
     from .api.protein_replacement import router as protein_replacement_router
     from .api.isoform_engineering import router as isoform_engineering_router
     from .api.translational_regulation import router as translational_regulation_router
+    from .api.rna_neutralization import router as rna_neutralization_router
     from .api.rna_editing import router as rna_editing_router
     from .api.upload import router as upload_router
     from .api.assistant import router as assistant_router
@@ -73,6 +74,7 @@ except ImportError:
     from api.protein_replacement import router as protein_replacement_router
     from api.isoform_engineering import router as isoform_engineering_router
     from api.translational_regulation import router as translational_regulation_router
+    from api.rna_neutralization import router as rna_neutralization_router
     from api.rna_editing import router as rna_editing_router
     from api.upload import router as upload_router
     from api.assistant import router as assistant_router
@@ -116,6 +118,7 @@ app.include_router(gene_silencing_router)
 app.include_router(gene_upregulation_router)
 app.include_router(isoform_engineering_router)
 app.include_router(translational_regulation_router)
+app.include_router(rna_neutralization_router)
 app.include_router(rna_editing_router)
 app.include_router(upload_router)
 app.include_router(assistant_router)
