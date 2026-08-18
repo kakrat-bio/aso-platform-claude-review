@@ -1,0 +1,53 @@
+{
+  "epochs": 8,
+  "runs": {
+    "exp01_class_imbalance": {
+      "status": "ok",
+      "seconds": 121.7
+    },
+    "exp02_per_mechanism": {
+      "status": "ok",
+      "seconds": 62.1
+    },
+    "exp04_ranking_metrics": {
+      "status": "ok",
+      "seconds": 32.9
+    },
+    "exp06_significance": {
+      "status": "ok",
+      "seconds": 91.6
+    },
+    "exp07_error_analysis": {
+      "status": "ok",
+      "seconds": 32.2
+    },
+    "exp08_attribution": {
+      "status": "ok",
+      "seconds": 64.1
+    },
+    "exp12_ml_vs_heuristic": {
+      "status": "ok",
+      "seconds": 36.6
+    },
+    "exp03_within_mechanism_split": {
+      "status": "ok",
+      "seconds": 57.8
+    },
+    "exp05_cross_chemistry": {
+      "status": "ok",
+      "seconds": 89.5
+    },
+    "exp09_motif_analysis": {
+      "status": "ok",
+      "seconds": 0.4
+    },
+    "exp10_thermodynamics": {
+      "status": "ok",
+      "seconds": 3.3
+    },
+    "exp11_rnafm_mlp": {
+      "status": "ok",
+      "seconds": 17.2
+    }
+  }
+}

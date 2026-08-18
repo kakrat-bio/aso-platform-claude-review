@@ -1,0 +1,729 @@
+{
+  "experiment": "exp06_significance",
+  "question": "Is chemistry conditioning significantly better than sequence-only or chemistry-invariant ranking?",
+  "protocol": {
+    "split": "grouped",
+    "split_note": "rnase_h: target_gene, 254 train / 85 test; sirna: experiment_id, 8 train / 3 test; splice_switching: target_gene, 4 train / 1 test",
+    "epochs": 8,
+    "pairing": "by experiment_id; identical held-out groups",
+    "multiplicity": "Holm-Bonferroni over all 12 comparisons",
+    "scipy_available": true
+  },
+  "table": [
+    {
+      "model": "seqonly",
+      "n_groups": 528,
+      "ndcg@10": 0.7119,
+      "top10": 0.3285,
+      "pearson": 0.3396,
+      "mrr": 0.1905
+    },
+    {
+      "model": "conditioned",
+      "n_groups": 528,
+      "ndcg@10": 0.7252,
+      "top10": 0.3397,
+      "pearson": 0.3656,
+      "mrr": 0.1884
+    },
+    {
+      "model": "invariant",
+      "n_groups": 528,
+      "ndcg@10": 0.5995,
+      "top10": 0.2314,
+      "pearson": 0.1341,
+      "mrr": 0.1226
+    }
+  ],
+  "summaries": {
+    "seqonly": {
+      "n_groups": 528,
+      "n_genes": 89,
+      "mrr": 0.1904813606666505,
+      "n_groups_mrr": 528,
+      "pearson": 0.3396448645863443,
+      "n_groups_pearson": 527,
+      "ndcg@1": 0.7281641031880577,
+      "n_groups_ndcg@1": 528,
+      "top1": 0.0928030303030303,
+      "n_groups_top1": 528,
+      "map@1": 0.0928030303030303,
+      "n_groups_map@1": 528,
+      "ndcg@3": 0.7080913473466208,
+      "n_groups_ndcg@3": 528,
+      "top3": 0.16477272727272727,
+      "n_groups_top3": 528,
+      "map@3": 0.29955808080808083,
+      "n_groups_map@3": 528,
+      "ndcg@5": 0.7054184485654742,
+      "n_groups_ndcg@5": 527,
+      "top5": 0.21631878557874762,
+      "n_groups_top5": 527,
+      "map@5": 0.4228520978283787,
+      "n_groups_map@5": 527,
+      "ndcg@10": 0.7119108539716462,
+      "n_groups_ndcg@10": 522,
+      "top10": 0.328544061302682,
+      "n_groups_top10": 522,
+      "map@10": 0.5171769006133744,
+      "n_groups_map@10": 522,
+      "ndcg@20": 0.7253627157595577,
+      "n_groups_ndcg@20": 499,
+      "top20": 0.4525050100200401,
+      "n_groups_top20": 499,
+      "map@20": 0.5902583094964173,
+      "n_groups_map@20": 499,
+      "ci95_ndcg@10": [
+        0.6823036920445256,
+        0.7349913674668045
+      ],
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.19192554326689984,
+          "n_groups_mrr": 523,
+          "pearson": 0.3405268877003153,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.728913870777788,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.09369024856596558,
+          "n_groups_top1": 523,
+          "map@1": 0.09369024856596558,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.7091999422657596,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.16634799235181644,
+          "n_groups_top3": 523,
+          "map@3": 0.3024219247928617,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.7064864338399206,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.21685823754789274,
+          "n_groups_top5": 522,
+          "map@5": 0.42529533844189016,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.7124561960170763,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.3292069632495165,
+          "n_groups_top10": 517,
+          "map@10": 0.519353552349373,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7258076751629865,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.45293522267206476,
+          "n_groups_top20": 494,
+          "map@20": 0.5912805099389501,
+          "n_groups_map@20": 494
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.03440902464580201,
+          "n_groups_mrr": 3,
+          "pearson": 0.3415401919830791,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.7703973555037386,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.6809752659695527,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.0,
+          "n_groups_top3": 3,
+          "map@3": 0.0,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.6844366870630806,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.26666666666666666,
+          "n_groups_top5": 3,
+          "map@5": 0.2796296296296296,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.7506352561228772,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.3333333333333333,
+          "n_groups_top10": 3,
+          "map@10": 0.3794444444444444,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.7556297375960578,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.48333333333333334,
+          "n_groups_top20": 3,
+          "map@20": 0.5610404331173166,
+          "n_groups_map@20": 3
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.0469361147327249,
+          "n_groups_mrr": 2,
+          "pearson": 0.10659384074481443,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.46875,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.45886789805743694,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.4581469341885477,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.5128533320011004,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.15,
+          "n_groups_top10": 2,
+          "map@10": 0.1611111111111111,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5700572103578743,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.3,
+          "n_groups_top20": 2,
+          "map@20": 0.3816016147595095,
+          "n_groups_map@20": 2
+        }
+      }
+    },
+    "conditioned": {
+      "n_groups": 528,
+      "n_genes": 89,
+      "mrr": 0.1883763306209656,
+      "n_groups_mrr": 528,
+      "pearson": 0.3656372546617068,
+      "n_groups_pearson": 527,
+      "ndcg@1": 0.741577841146209,
+      "n_groups_ndcg@1": 528,
+      "top1": 0.06818181818181818,
+      "n_groups_top1": 528,
+      "map@1": 0.06818181818181818,
+      "n_groups_map@1": 528,
+      "ndcg@3": 0.7262875395730638,
+      "n_groups_ndcg@3": 528,
+      "top3": 0.163510101010101,
+      "n_groups_top3": 528,
+      "map@3": 0.28740530303030304,
+      "n_groups_map@3": 528,
+      "ndcg@5": 0.722206304809917,
+      "n_groups_ndcg@5": 527,
+      "top5": 0.23908918406072105,
+      "n_groups_top5": 527,
+      "map@5": 0.43976913345983554,
+      "n_groups_map@5": 527,
+      "ndcg@10": 0.7251971155110505,
+      "n_groups_ndcg@10": 522,
+      "top10": 0.3396551724137931,
+      "n_groups_top10": 522,
+      "map@10": 0.5480528544254369,
+      "n_groups_map@10": 522,
+      "ndcg@20": 0.7369965811791617,
+      "n_groups_ndcg@20": 499,
+      "top20": 0.4703406813627255,
+      "n_groups_top20": 499,
+      "map@20": 0.6069736975615139,
+      "n_groups_map@20": 499,
+      "ci95_ndcg@10": [
+        0.7010274164196227,
+        0.7430203227228356
+      ],
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.18966309304287296,
+          "n_groups_mrr": 523,
+          "pearson": 0.36581969570819634,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.7435406531380502,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.06883365200764818,
+          "n_groups_top1": 523,
+          "map@1": 0.06883365200764818,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.727098259681802,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.16507329509241553,
+          "n_groups_top3": 523,
+          "map@3": 0.2901529636711281,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.7227752504218318,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.23946360153256704,
+          "n_groups_top5": 522,
+          "map@5": 0.441576202639421,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.7254067852024614,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.33984526112185687,
+          "n_groups_top10": 517,
+          "map@10": 0.549760712616589,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7370686273385584,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.4703441295546559,
+          "n_groups_top20": 494,
+          "map@20": 0.6077033677718123,
+          "n_groups_map@20": 494
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.06373781750239862,
+          "n_groups_mrr": 3,
+          "pearson": 0.5412809436801721,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.7187795113327029,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.7944184144148593,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.0,
+          "n_groups_top3": 3,
+          "map@3": 0.0,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.811334257029858,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.3333333333333333,
+          "n_groups_top5": 3,
+          "map@5": 0.4185185185185185,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.8154850131559006,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.3666666666666667,
+          "n_groups_top10": 3,
+          "map@10": 0.46460317460317463,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.8349208610930976,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5666666666666667,
+          "n_groups_top20": 3,
+          "map@20": 0.6441631473843276,
+          "n_groups_map@20": 3
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.038845726970033294,
+          "n_groups_mrr": 2,
+          "pearson": 0.05455460800024898,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.26249999999999996,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.4120879188753465,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.4400195717702837,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.5355656538140603,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.25,
+          "n_groups_top10": 2,
+          "map@10": 0.23174603174603173,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5723147599372485,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.325,
+          "n_groups_top20": 2,
+          "map@20": 0.37096098088358154,
+          "n_groups_map@20": 2
+        }
+      }
+    },
+    "invariant": {
+      "n_groups": 528,
+      "n_genes": 89,
+      "mrr": 0.1226468755250374,
+      "n_groups_mrr": 528,
+      "pearson": 0.13414886109972213,
+      "n_groups_pearson": 527,
+      "ndcg@1": 0.5721960535101811,
+      "n_groups_ndcg@1": 528,
+      "top1": 0.03787878787878788,
+      "n_groups_top1": 528,
+      "map@1": 0.03787878787878788,
+      "n_groups_map@1": 528,
+      "ndcg@3": 0.5831537586851668,
+      "n_groups_ndcg@3": 528,
+      "top3": 0.1029040404040404,
+      "n_groups_top3": 528,
+      "map@3": 0.1773989898989899,
+      "n_groups_map@3": 528,
+      "ndcg@5": 0.5874518101954717,
+      "n_groups_ndcg@5": 527,
+      "top5": 0.13889943074003794,
+      "n_groups_top5": 527,
+      "map@5": 0.2634434956778411,
+      "n_groups_map@5": 527,
+      "ndcg@10": 0.5995480258633523,
+      "n_groups_ndcg@10": 522,
+      "top10": 0.2314176245210728,
+      "n_groups_top10": 522,
+      "map@10": 0.3906208665529501,
+      "n_groups_map@10": 522,
+      "ndcg@20": 0.6237535235853638,
+      "n_groups_ndcg@20": 499,
+      "top20": 0.3535070140280561,
+      "n_groups_top20": 499,
+      "map@20": 0.46027964352057293,
+      "n_groups_map@20": 499,
+      "ci95_ndcg@10": [
+        0.5729859181974092,
+        0.6214665665430604
+      ],
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.12165922881869498,
+          "n_groups_mrr": 523,
+          "pearson": 0.13405556177591613,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.572453797461075,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.036328871892925434,
+          "n_groups_top1": 523,
+          "map@1": 0.036328871892925434,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.5829419825258169,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.10133843212237093,
+          "n_groups_top3": 523,
+          "map@3": 0.1755895474824729,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.5870593619743949,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.1383141762452107,
+          "n_groups_top5": 522,
+          "map@5": 0.2624547679863772,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.5995184421335478,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.23191489361702128,
+          "n_groups_top10": 517,
+          "map@10": 0.3906667838709379,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.623515586934408,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.35313765182186235,
+          "n_groups_top20": 494,
+          "map@20": 0.4602813053524541,
+          "n_groups_map@20": 494
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.03399860908816544,
+          "n_groups_mrr": 3,
+          "pearson": 0.2581916389637179,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.546226727077791,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.6350318951732169,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.2222222222222222,
+          "n_groups_top3": 3,
+          "map@3": 0.3333333333333333,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.6603473207513441,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.20000000000000004,
+          "n_groups_top5": 3,
+          "map@5": 0.3333333333333333,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.648582624402907,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.20000000000000004,
+          "n_groups_top10": 3,
+          "map@10": 0.40238095238095234,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.7181288908688991,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5166666666666667,
+          "n_groups_top20": 3,
+          "map@20": 0.5281705599165858,
+          "n_groups_map@20": 3
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.5138888888888888,
+          "n_groups_mrr": 2,
+          "pearson": -0.027564182182918465,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.54375,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.5,
+          "n_groups_top1": 2,
+          "map@1": 0.5,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.5607160196231042,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.3333333333333333,
+          "n_groups_top3": 2,
+          "map@3": 0.41666666666666663,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.5805375300627083,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.2,
+          "n_groups_top5": 2,
+          "map@5": 0.41666666666666663,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.5336435222084973,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.15,
+          "n_groups_top10": 2,
+          "map@10": 0.3611111111111111,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5409608254461041,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.2,
+          "n_groups_top20": 2,
+          "map@20": 0.35803279645191405,
+          "n_groups_map@20": 2
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "seqonly_vs_conditioned": {
+      "n_paired_groups": 528,
+      "ndcg@10": {
+        "paired_bootstrap": {
+          "n": 522,
+          "mean_diff": -0.013286261539404261,
+          "ci95": [
+            -0.02113523839045093,
+            -0.005621373889288257
+          ],
+          "p": 0.0003
+        },
+        "wilcoxon": {
+          "statistic": 58336.0,
+          "p": 0.004028585814833473,
+          "p_holm": 0.012085757444500418
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "top10": {
+        "paired_bootstrap": {
+          "n": 522,
+          "mean_diff": -0.01111111111111111,
+          "ci95": [
+            -0.02203065134099617,
+            -2.5469196781392057e-18
+          ],
+          "p": 0.0495
+        },
+        "wilcoxon": {
+          "statistic": 26983.0,
+          "p": 0.047448334274020114,
+          "p_holm": 0.09489666854804023
+        },
+        "significant_at_0.05_after_holm": false
+      },
+      "pearson": {
+        "paired_bootstrap": {
+          "n": 527,
+          "mean_diff": -0.02599239007536251,
+          "ci95": [
+            -0.03697713701278905,
+            -0.015282124892140073
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 53682.0,
+          "p": 5.595801370935709e-06,
+          "p_holm": 2.2383205483742837e-05
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "mrr": {
+        "paired_bootstrap": {
+          "n": 528,
+          "mean_diff": 0.002105030045684918,
+          "ci95": [
+            -0.01905259823687224,
+            0.022744394606885477
+          ],
+          "p": 0.847
+        },
+        "wilcoxon": {
+          "statistic": 54193.0,
+          "p": 0.21673900384725064,
+          "p_holm": 0.21673900384725064
+        },
+        "significant_at_0.05_after_holm": false
+      }
+    },
+    "seqonly_vs_invariant": {
+      "n_paired_groups": 528,
+      "ndcg@10": {
+        "paired_bootstrap": {
+          "n": 522,
+          "mean_diff": 0.11236282810829386,
+          "ci95": [
+            0.10099051721422346,
+            0.12373608702688182
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 16084.0,
+          "p": 1.0148064748345353e-51,
+          "p_holm": 9.133258273510817e-51
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "top10": {
+        "paired_bootstrap": {
+          "n": 522,
+          "mean_diff": 0.0971264367816092,
+          "ci95": [
+            0.08390804597701149,
+            0.1111111111111111
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 12769.0,
+          "p": 3.798208921903875e-32,
+          "p_holm": 2.6587462453327122e-31
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "pearson": {
+        "paired_bootstrap": {
+          "n": 527,
+          "mean_diff": 0.2054960034866222,
+          "ci95": [
+            0.18864774555628308,
+            0.2221555767581003
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 8074.0,
+          "p": 3.4003871737359846e-69,
+          "p_holm": 3.740425891109583e-68
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "mrr": {
+        "paired_bootstrap": {
+          "n": 528,
+          "mean_diff": 0.06783448514161308,
+          "ci95": [
+            0.04106097465795447,
+            0.09409947727371616
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 42294.0,
+          "p": 3.0015125910033745e-12,
+          "p_holm": 1.5007562955016872e-11
+        },
+        "significant_at_0.05_after_holm": true
+      }
+    },
+    "conditioned_vs_invariant": {
+      "n_paired_groups": 528,
+      "ndcg@10": {
+        "paired_bootstrap": {
+          "n": 522,
+          "mean_diff": 0.1256490896476981,
+          "ci95": [
+            0.11407972244488643,
+            0.1374097576079276
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 13628.0,
+          "p": 1.5682436544937848e-56,
+          "p_holm": 1.5682436544937848e-55
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "top10": {
+        "paired_bootstrap": {
+          "n": 522,
+          "mean_diff": 0.1082375478927203,
+          "ci95": [
+            0.09444444444444444,
+            0.12222222222222223
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 11780.0,
+          "p": 3.029063832896386e-37,
+          "p_holm": 2.423251066317109e-36
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "pearson": {
+        "paired_bootstrap": {
+          "n": 527,
+          "mean_diff": 0.23148839356198472,
+          "ci95": [
+            0.212871312395861,
+            0.24960089603533508
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 5995.0,
+          "p": 7.970250192107692e-74,
+          "p_holm": 9.56430023052923e-73
+        },
+        "significant_at_0.05_after_holm": true
+      },
+      "mrr": {
+        "paired_bootstrap": {
+          "n": 528,
+          "mean_diff": 0.06572945509592817,
+          "ci95": [
+            0.03892763063705234,
+            0.09248777908870065
+          ],
+          "p": 0.0
+        },
+        "wilcoxon": {
+          "statistic": 40169.5,
+          "p": 6.231194545913018e-14,
+          "p_holm": 3.738716727547811e-13
+        },
+        "significant_at_0.05_after_holm": true
+      }
+    }
+  }
+}

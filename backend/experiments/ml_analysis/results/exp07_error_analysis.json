@@ -1,0 +1,836 @@
+{
+  "experiment": "exp07_error_analysis",
+  "question": "Which genes, mechanisms and chemistries does the ranker fail on, and what do the failures look like?",
+  "protocol": {
+    "split": "grouped",
+    "split_note": "rnase_h: target_gene, 254 train / 85 test; sirna: experiment_id, 8 train / 3 test; splice_switching: target_gene, 4 train / 1 test",
+    "epochs": 8,
+    "metric": "ndcg@10",
+    "flat_label_sd_threshold": 5.0
+  },
+  "group_counts": {
+    "total": 528,
+    "flat_label_excluded": 1,
+    "analysed": 527
+  },
+  "flat_label_groups": {
+    "note": "label sd below the threshold: the true order is within assay noise, so a low score here is not a model error",
+    "mean_metric": null,
+    "examples": [
+      {
+        "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20200208147A1_table_00026.xml",
+        "gene": "IRF5",
+        "modality": "rnase_h",
+        "n": 6,
+        "ndcg@10": NaN,
+        "label_sd": 0.0
+      }
+    ]
+  },
+  "hardest_genes": [
+    {
+      "gene": "CTGF",
+      "n_groups": 3,
+      "mean": 0.5994845196105264,
+      "median": 0.6091731980128189,
+      "mean_top10": 0.13333333333333333,
+      "mean_pearson": 0.19607785917750917
+    },
+    {
+      "gene": "STAT3",
+      "n_groups": 6,
+      "mean": 0.6413637556823671,
+      "median": 0.6687369026255581,
+      "mean_top10": 0.05000000000000001,
+      "mean_pearson": 0.3204398552692831
+    },
+    {
+      "gene": "F7",
+      "n_groups": 16,
+      "mean": 0.6449272021141478,
+      "median": 0.640763603996928,
+      "mean_top10": 0.39999999999999997,
+      "mean_pearson": 0.09922502100015286
+    },
+    {
+      "gene": "SPDEF",
+      "n_groups": 32,
+      "mean": 0.6582051103511425,
+      "median": 0.6610773052631573,
+      "mean_top10": 0.25625,
+      "mean_pearson": 0.1941098232486704
+    },
+    {
+      "gene": "SCN2A",
+      "n_groups": 32,
+      "mean": 0.7013529164486662,
+      "median": 0.6997142660371204,
+      "mean_top10": 0.290625,
+      "mean_pearson": 0.47867576239587506
+    },
+    {
+      "gene": "F11",
+      "n_groups": 6,
+      "mean": 0.7019176092376168,
+      "median": 0.7382617354594565,
+      "mean_top10": 0.35,
+      "mean_pearson": 0.22502544293072266
+    },
+    {
+      "gene": "IRF5",
+      "n_groups": 23,
+      "mean": 0.7099157760258629,
+      "median": 0.7155992334544208,
+      "mean_top10": 0.41818181818181815,
+      "mean_pearson": 0.27542575095587213
+    },
+    {
+      "gene": "SNCA",
+      "n_groups": 39,
+      "mean": 0.7264309785177875,
+      "median": 0.7490991460181083,
+      "mean_top10": 0.3282051282051282,
+      "mean_pearson": 0.36717130794761005
+    },
+    {
+      "gene": "APOC3",
+      "n_groups": 5,
+      "mean": 0.728145033848256,
+      "median": 0.7840460540802093,
+      "mean_top10": 0.48,
+      "mean_pearson": 0.22492607075454835
+    },
+    {
+      "gene": "IFNAR1",
+      "n_groups": 33,
+      "mean": 0.7345685861577022,
+      "median": 0.7449327562717858,
+      "mean_top10": 0.3545454545454545,
+      "mean_pearson": 0.39697384458646073
+    },
+    {
+      "gene": "PSD3",
+      "n_groups": 4,
+      "mean": 0.7448005713732138,
+      "median": 0.7286127473079376,
+      "mean_top10": 0.125,
+      "mean_pearson": 0.2918147756190345
+    },
+    {
+      "gene": "PMP22",
+      "n_groups": 71,
+      "mean": 0.7517493443177646,
+      "median": 0.7677032474871571,
+      "mean_top10": 0.3901408450704225,
+      "mean_pearson": 0.42610195619817487
+    },
+    {
+      "gene": "GHR",
+      "n_groups": 35,
+      "mean": 0.7533710508292395,
+      "median": 0.7570182286061964,
+      "mean_top10": 0.3314285714285714,
+      "mean_pearson": 0.42522952838289635
+    },
+    {
+      "gene": "GCGR",
+      "n_groups": 6,
+      "mean": 0.7552574546991799,
+      "median": 0.740804807195514,
+      "mean_top10": 0.45,
+      "mean_pearson": 0.2996658411304765
+    },
+    {
+      "gene": "ATXN1",
+      "n_groups": 46,
+      "mean": 0.7675731748184865,
+      "median": 0.777657853110606,
+      "mean_top10": 0.3652173913043478,
+      "mean_pearson": 0.48476174905586966
+    }
+  ],
+  "easiest_genes": [
+    {
+      "gene": "PRNP",
+      "n_groups": 35,
+      "mean": 0.8078531164937364,
+      "median": 0.8115452348649959,
+      "mean_top10": 0.40285714285714286,
+      "mean_pearson": 0.4515447933348192
+    },
+    {
+      "gene": "DNM2",
+      "n_groups": 3,
+      "mean": 0.8006845045179046,
+      "median": 0.7967482164144117,
+      "mean_top10": 0.20000000000000004,
+      "mean_pearson": 0.5653958830901235
+    },
+    {
+      "gene": "TMPRSS6",
+      "n_groups": 3,
+      "mean": 0.7943181126261195,
+      "median": 0.8027526413053624,
+      "mean_top10": 0.6666666666666666,
+      "mean_pearson": 0.3326682564536218
+    },
+    {
+      "gene": "ATXN2",
+      "n_groups": 44,
+      "mean": 0.7834142129197864,
+      "median": 0.791499212335058,
+      "mean_top10": 0.3977272727272727,
+      "mean_pearson": 0.49621437227182397
+    },
+    {
+      "gene": "COMP",
+      "n_groups": 4,
+      "mean": 0.7776171781312822,
+      "median": 0.7805466768060169,
+      "mean_top10": 0.325,
+      "mean_pearson": 0.3847718361885114
+    },
+    {
+      "gene": "ATXN1",
+      "n_groups": 46,
+      "mean": 0.7675731748184865,
+      "median": 0.777657853110606,
+      "mean_top10": 0.3652173913043478,
+      "mean_pearson": 0.48476174905586966
+    },
+    {
+      "gene": "GCGR",
+      "n_groups": 6,
+      "mean": 0.7552574546991799,
+      "median": 0.740804807195514,
+      "mean_top10": 0.45,
+      "mean_pearson": 0.2996658411304765
+    },
+    {
+      "gene": "GHR",
+      "n_groups": 35,
+      "mean": 0.7533710508292395,
+      "median": 0.7570182286061964,
+      "mean_top10": 0.3314285714285714,
+      "mean_pearson": 0.42522952838289635
+    },
+    {
+      "gene": "PMP22",
+      "n_groups": 71,
+      "mean": 0.7517493443177646,
+      "median": 0.7677032474871571,
+      "mean_top10": 0.3901408450704225,
+      "mean_pearson": 0.42610195619817487
+    },
+    {
+      "gene": "PSD3",
+      "n_groups": 4,
+      "mean": 0.7448005713732138,
+      "median": 0.7286127473079376,
+      "mean_top10": 0.125,
+      "mean_pearson": 0.2918147756190345
+    },
+    {
+      "gene": "IFNAR1",
+      "n_groups": 33,
+      "mean": 0.7345685861577022,
+      "median": 0.7449327562717858,
+      "mean_top10": 0.3545454545454545,
+      "mean_pearson": 0.39697384458646073
+    },
+    {
+      "gene": "APOC3",
+      "n_groups": 5,
+      "mean": 0.728145033848256,
+      "median": 0.7840460540802093,
+      "mean_top10": 0.48,
+      "mean_pearson": 0.22492607075454835
+    },
+    {
+      "gene": "SNCA",
+      "n_groups": 39,
+      "mean": 0.7264309785177875,
+      "median": 0.7490991460181083,
+      "mean_top10": 0.3282051282051282,
+      "mean_pearson": 0.36717130794761005
+    },
+    {
+      "gene": "IRF5",
+      "n_groups": 23,
+      "mean": 0.7099157760258629,
+      "median": 0.7155992334544208,
+      "mean_top10": 0.41818181818181815,
+      "mean_pearson": 0.27542575095587213
+    },
+    {
+      "gene": "F11",
+      "n_groups": 6,
+      "mean": 0.7019176092376168,
+      "median": 0.7382617354594565,
+      "mean_top10": 0.35,
+      "mean_pearson": 0.22502544293072266
+    }
+  ],
+  "by_modality": [
+    {
+      "modality": "splice_switching",
+      "n_groups": 2,
+      "mean": 0.5355656538140603,
+      "median": 0.5355656538140603,
+      "mean_top10": 0.25,
+      "mean_pearson": 0.05455460800024898
+    },
+    {
+      "modality": "rnase_h",
+      "n_groups": 522,
+      "mean": 0.7254067852024614,
+      "median": 0.7453749357153184,
+      "mean_top10": 0.33984526112185687,
+      "mean_pearson": 0.36581969570819634
+    },
+    {
+      "modality": "sirna",
+      "n_groups": 3,
+      "mean": 0.8154850131559005,
+      "median": 0.8556742183083185,
+      "mean_top10": 0.3666666666666667,
+      "mean_pearson": 0.5412809436801721
+    }
+  ],
+  "by_chemistry_class": [
+    {
+      "chem_class": "PS",
+      "n_groups": 1,
+      "mean": 0.6715682907570272,
+      "median": 0.6715682907570272,
+      "mean_top10": 0.5,
+      "mean_pearson": -0.02433209922505015
+    },
+    {
+      "chem_class": "unmodified",
+      "n_groups": 6,
+      "mean": 0.7098134926484013,
+      "median": 0.766782718421054,
+      "mean_top10": 0.31666666666666665,
+      "mean_pearson": 0.37953410135830823
+    },
+    {
+      "chem_class": "MOE+cEt",
+      "n_groups": 46,
+      "mean": 0.7152064886055792,
+      "median": 0.7112439382392035,
+      "mean_top10": 0.34782608695652173,
+      "mean_pearson": 0.3080020642044205
+    },
+    {
+      "chem_class": "cEt",
+      "n_groups": 141,
+      "mean": 0.7174463059593544,
+      "median": 0.741274738765693,
+      "mean_top10": 0.34,
+      "mean_pearson": 0.3390416559943983
+    },
+    {
+      "chem_class": "MOE",
+      "n_groups": 333,
+      "mean": 0.7303357560484943,
+      "median": 0.7518964671263997,
+      "mean_top10": 0.3382978723404255,
+      "mean_pearson": 0.38578075750504864
+    }
+  ],
+  "by_cell_line": [
+    {
+      "cell_line": "t24",
+      "n_groups": 21,
+      "mean": 0.639986528011919,
+      "median": 0.647509420716533,
+      "mean_top10": 0.2619047619047619,
+      "mean_pearson": 0.24459048630538502
+    },
+    {
+      "cell_line": "huvec",
+      "n_groups": 5,
+      "mean": 0.6409667748407033,
+      "median": 0.6941251453604291,
+      "mean_top10": 0.04,
+      "mean_pearson": 0.3454606435743927
+    },
+    {
+      "cell_line": "hepb3",
+      "n_groups": 4,
+      "mean": 0.6447328138832189,
+      "median": 0.6527645451360313,
+      "mean_top10": 0.325,
+      "mean_pearson": 0.23412219026004477
+    },
+    {
+      "cell_line": "vcap",
+      "n_groups": 32,
+      "mean": 0.6582051103511425,
+      "median": 0.6610773052631573,
+      "mean_top10": 0.25625,
+      "mean_pearson": 0.1941098232486704
+    },
+    {
+      "cell_line": "b.end",
+      "n_groups": 3,
+      "mean": 0.6642315679613612,
+      "median": 0.6708598331852693,
+      "mean_top10": 0.2333333333333333,
+      "mean_pearson": 0.2869677492274924
+    },
+    {
+      "cell_line": "none",
+      "n_groups": 42,
+      "mean": 0.6852558593920082,
+      "median": 0.6584841523421784,
+      "mean_top10": 0.33076923076923076,
+      "mean_pearson": 0.2302894871736193
+    },
+    {
+      "cell_line": "sca204",
+      "n_groups": 6,
+      "mean": 0.692909450618098,
+      "median": 0.7002526901532538,
+      "mean_top10": 0.25,
+      "mean_pearson": 0.35003701996676156
+    },
+    {
+      "cell_line": "a549",
+      "n_groups": 72,
+      "mean": 0.7083450541357821,
+      "median": 0.7430039924854004,
+      "mean_top10": 0.32083333333333336,
+      "mean_pearson": 0.35990543466601815
+    },
+    {
+      "cell_line": "thp1",
+      "n_groups": 27,
+      "mean": 0.708608092404737,
+      "median": 0.7084459302347201,
+      "mean_top10": 0.3961538461538462,
+      "mean_pearson": 0.2838359262621159
+    },
+    {
+      "cell_line": "shsy5y",
+      "n_groups": 59,
+      "mean": 0.7089501547708993,
+      "median": 0.7134817442849641,
+      "mean_top10": 0.2983050847457627,
+      "mean_pearson": 0.4331677818081867
+    },
+    {
+      "cell_line": "hep3b",
+      "n_groups": 45,
+      "mean": 0.734917258150292,
+      "median": 0.75234610785499,
+      "mean_top10": 0.3613636363636364,
+      "mean_pearson": 0.3494996695313261
+    },
+    {
+      "cell_line": "hepg2",
+      "n_groups": 17,
+      "mean": 0.7665180766327114,
+      "median": 0.7731393731407684,
+      "mean_top10": 0.4117647058823529,
+      "mean_pearson": 0.3343932114655926
+    },
+    {
+      "cell_line": "k562",
+      "n_groups": 20,
+      "mean": 0.7718232569998974,
+      "median": 0.7852103770051475,
+      "mean_top10": 0.43,
+      "mean_pearson": 0.466254043953224
+    },
+    {
+      "cell_line": "a431",
+      "n_groups": 159,
+      "mean": 0.7755943508826845,
+      "median": 0.7820110463618414,
+      "mean_top10": 0.3748427672955975,
+      "mean_pearson": 0.45722271579678186
+    },
+    {
+      "cell_line": "hela",
+      "n_groups": 3,
+      "mean": 0.8154850131559005,
+      "median": 0.8556742183083185,
+      "mean_top10": 0.3666666666666667,
+      "mean_pearson": 0.5412809436801721
+    }
+  ],
+  "difficulty_correlations": {
+    "note": "Pearson r between the group descriptor and ndcg@10",
+    "values": {
+      "n": -0.003,
+      "label_sd": -0.0174,
+      "label_range": -0.0468,
+      "len_sd": -0.0892,
+      "gc_sd": 0.1002,
+      "gc_mean": -0.24
+    }
+  },
+  "worst_groups": [
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20140336237A1_table_00001.xml",
+      "gene": "STAT3",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 330,
+      "ndcg@10": 0.20898708651117612,
+      "top10": 0.0,
+      "pearson": 0.10270309719196613,
+      "label_sd": 28.907323356900797
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20150031747A1_table_00023.xml",
+      "gene": "F7",
+      "modality": "rnase_h",
+      "chem_class": "MOE+cEt",
+      "n": 151,
+      "ndcg@10": 0.2666845612282232,
+      "top10": 0.0,
+      "pearson": -0.4793576690660895,
+      "label_sd": 28.948907877217042
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20180127751A1_table_00012.xml",
+      "gene": "FN1",
+      "modality": "splice_switching",
+      "chem_class": "MOE",
+      "n": 81,
+      "ndcg@10": 0.3414794610832057,
+      "top10": 0.0,
+      "pearson": -0.11282833247623629,
+      "label_sd": 29.039257284731548
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20040023906A1_table_1.xml",
+      "gene": "PPP2R4",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 72,
+      "ndcg@10": 0.3533698292526414,
+      "top10": 0.1,
+      "pearson": -0.05594722626053461,
+      "label_sd": 29.03759914268883
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20240026353A1_table_00014.xml",
+      "gene": "SCN2A",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 76,
+      "ndcg@10": 0.35730027009742205,
+      "top10": 0.1,
+      "pearson": 0.16577932615478608,
+      "label_sd": 29.04707708153455
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20100298417A1_table_00017.xml",
+      "gene": "F7",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 232,
+      "ndcg@10": 0.3748291526110175,
+      "top10": 0.1,
+      "pearson": 0.009822783701092375,
+      "label_sd": 28.903453167580622
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220112503A1_table_00053.xml",
+      "gene": "PMP22",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 77,
+      "ndcg@10": 0.4015417241291755,
+      "top10": 0.0,
+      "pearson": 0.10806664445515983,
+      "label_sd": 28.889863158294574
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220112503A1_table_00049.xml",
+      "gene": "PMP22",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 77,
+      "ndcg@10": 0.43855285791691195,
+      "top10": 0.4,
+      "pearson": 0.34162375937397577,
+      "label_sd": 28.962364605260817
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20040005292A1_table_1.xml",
+      "gene": "NCOR2",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 37,
+      "ndcg@10": 0.44086183333083967,
+      "top10": 0.2,
+      "pearson": -0.17566822826508896,
+      "label_sd": 29.228993547392687
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20200208147A1_table_00023.xml",
+      "gene": "IRF5",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 38,
+      "ndcg@10": 0.4430973202359763,
+      "top10": 0.3,
+      "pearson": -0.06663544434820859,
+      "label_sd": 29.18882871568875
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20040014047A1_table_1.xml",
+      "gene": "LIMK1",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 78,
+      "ndcg@10": 0.44962041533710195,
+      "top10": 0.2,
+      "pearson": -0.0729513516595892,
+      "label_sd": 29.033965134522525
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20040097449A1_table_2.xml",
+      "gene": "KIAA0415",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 33,
+      "ndcg@10": 0.4546141612041708,
+      "top10": 0.1,
+      "pearson": -0.16959030170222103,
+      "label_sd": 29.27959248814452
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20040115636A1_table_2.xml",
+      "gene": "IL18",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 72,
+      "ndcg@10": 0.4656462019527798,
+      "top10": 0.1,
+      "pearson": 0.11800103025458783,
+      "label_sd": 29.05116297882987
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20210139906A1_table_00034.xml",
+      "gene": "SPDEF",
+      "modality": "rnase_h",
+      "chem_class": "MOE+cEt",
+      "n": 26,
+      "ndcg@10": 0.4744402581814482,
+      "top10": 0.4,
+      "pearson": -0.21678833681136378,
+      "label_sd": 29.392266422373538
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20210139906A1_table_00030.xml",
+      "gene": "SPDEF",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 18,
+      "ndcg@10": 0.4765417550772201,
+      "top10": 0.3,
+      "pearson": -0.5872801404166407,
+      "label_sd": 26.075277873775885
+    }
+  ],
+  "best_groups": [
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20200208147A1_table_00022.xml",
+      "gene": "IRF5",
+      "modality": "rnase_h",
+      "chem_class": "MOE+cEt",
+      "n": 12,
+      "ndcg@10": 0.9894429771435342,
+      "top10": 0.9,
+      "pearson": 0.773497491076519,
+      "label_sd": 19.54339899926429
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20200056179A1_table_00023.xml",
+      "gene": "ATXN2",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 75,
+      "ndcg@10": 0.955055636982178,
+      "top10": 0.8,
+      "pearson": 0.6065939687297959,
+      "label_sd": 28.95642371693153
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220025366A1_table_00026.xml",
+      "gene": "PRNP",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 77,
+      "ndcg@10": 0.9379840036905299,
+      "top10": 0.6,
+      "pearson": 0.5424688165476683,
+      "label_sd": 28.97711117894967
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20200056179A1_table_00032.xml",
+      "gene": "ATXN2",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 77,
+      "ndcg@10": 0.9360580226753182,
+      "top10": 0.6,
+      "pearson": 0.6575967678129542,
+      "label_sd": 29.040608059996014
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220025366A1_table_00002.xml",
+      "gene": "PRNP",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 73,
+      "ndcg@10": 0.9269027471786425,
+      "top10": 0.5,
+      "pearson": 0.5639102795434414,
+      "label_sd": 29.05604350966744
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220025366A1_table_00024.xml",
+      "gene": "PRNP",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 77,
+      "ndcg@10": 0.9223620937399518,
+      "top10": 0.6,
+      "pearson": 0.4856525026429166,
+      "label_sd": 29.035067180672847
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20200392494A1_table_00009.xml",
+      "gene": "SNCA",
+      "modality": "rnase_h",
+      "chem_class": "MOE+cEt",
+      "n": 54,
+      "ndcg@10": 0.9197122827824961,
+      "top10": 0.8,
+      "pearson": 0.5842395637804281,
+      "label_sd": 29.121361216740432
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20240026353A1_table_00034.xml",
+      "gene": "SCN2A",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 77,
+      "ndcg@10": 0.9123701353793434,
+      "top10": 0.5,
+      "pearson": 0.5852126900542173,
+      "label_sd": 29.043282588915535
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20100298417A1_table_00008.xml",
+      "gene": "F7",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 11,
+      "ndcg@10": 0.9101482589998479,
+      "top10": 1.0,
+      "pearson": 0.37573504795859913,
+      "label_sd": 30.013770944034867
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20140336237A1_table_00013.xml",
+      "gene": "STAT3",
+      "modality": "rnase_h",
+      "chem_class": "MOE+cEt",
+      "n": 317,
+      "ndcg@10": 0.9069404109775812,
+      "top10": 0.2,
+      "pearson": 0.5935996795381774,
+      "label_sd": 28.907906687358533
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220290146A1_table_00022.xml",
+      "gene": "ATXN1",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 77,
+      "ndcg@10": 0.902817439547865,
+      "top10": 0.7,
+      "pearson": 0.5230007354477515,
+      "label_sd": 28.831422843461777
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220112503A1_table_00033.xml",
+      "gene": "PMP22",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 75,
+      "ndcg@10": 0.9024185278878792,
+      "top10": 0.6,
+      "pearson": 0.3901108816765677,
+      "label_sd": 29.035134562096296
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220112503A1_table_00002.xml",
+      "gene": "PMP22",
+      "modality": "rnase_h",
+      "chem_class": "cEt",
+      "n": 66,
+      "ndcg@10": 0.8996537124916848,
+      "top10": 0.8,
+      "pearson": 0.6103738141416882,
+      "label_sd": 29.07597227254803
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20220025366A1_table_00005.xml",
+      "gene": "PRNP",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 74,
+      "ndcg@10": 0.8989450205348842,
+      "top10": 0.5,
+      "pearson": 0.5760409026691871,
+      "label_sd": 29.051793821316245
+    },
+    {
+      "experiment_id": "patent-scrape-v2/data/inhibition_tables/US20100298417A1_table_00006.xml",
+      "gene": "F7",
+      "modality": "rnase_h",
+      "chem_class": "MOE",
+      "n": 13,
+      "ndcg@10": 0.8985730126497953,
+      "top10": 0.8,
+      "pearson": 0.4886591027873702,
+      "label_sd": 29.916056127123163
+    }
+  ],
+  "what_misses_look_like": {
+    "note": "oligos the model placed in its top 10; 'hit' also belongs in the true top 10, 'miss' does not",
+    "gc_fraction": {
+      "hit": {
+        "n": 1787,
+        "mean": 0.4131,
+        "sd": 0.1101
+      },
+      "miss": {
+        "n": 3433,
+        "mean": 0.4059,
+        "sd": 0.1099
+      }
+    },
+    "length": {
+      "hit": {
+        "n": 1787,
+        "mean": 18.5036,
+        "sd": 1.9038
+      },
+      "miss": {
+        "n": 3433,
+        "mean": 18.5147,
+        "sd": 1.9189
+      }
+    }
+  }
+}

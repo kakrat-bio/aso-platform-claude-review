@@ -1,0 +1,1850 @@
+{
+  "experiment": "exp10_thermodynamics",
+  "question": "Do the generated designs land in the same thermodynamic distribution as the real training oligos?",
+  "tools": {
+    "primer3": "2.3.0",
+    "ViennaRNA": "2.7.0",
+    "scipy": "installed"
+  },
+  "caveats": [
+    "Tm, hairpin dG, MFE and duplex dG are computed on the UNMODIFIED backbone. 2'-MOE, cEt and PS shift real duplex stability and neither tool models them; these numbers compare sequence sets to each other, they are not predictions of a modified oligo's Tm.",
+    "Matching the training distribution shows the generator learned the training composition. It is not evidence of activity.",
+    "primer3 hairpin dG converted from cal/mol to kcal/mol to sit on the same scale as the ViennaRNA energies."
+  ],
+  "distributions": {
+    "rnase_h": {
+      "training": {
+        "tm": {
+          "n": 1500,
+          "mean": 52.7458,
+          "sd": 7.1123,
+          "p05": 40.9871,
+          "median": 52.3324,
+          "p95": 64.6177
+        },
+        "hairpin_dg": {
+          "n": 1500,
+          "mean": -0.2817,
+          "sd": 0.6904,
+          "p05": -1.7844,
+          "median": 0.0,
+          "p95": 0.1633
+        },
+        "mfe": {
+          "n": 1500,
+          "mean": -1.0057,
+          "sd": 1.6529,
+          "p05": -4.5,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 1500,
+          "mean": -31.4957,
+          "sd": 6.4711,
+          "p05": -42.805,
+          "median": -30.8,
+          "p95": -21.5
+        }
+      },
+      "training_top20pct": {
+        "tm": {
+          "n": 1500,
+          "mean": 52.5971,
+          "sd": 6.8382,
+          "p05": 41.5359,
+          "median": 52.2776,
+          "p95": 64.2123
+        },
+        "hairpin_dg": {
+          "n": 1500,
+          "mean": -0.2046,
+          "sd": 0.5382,
+          "p05": -1.3475,
+          "median": 0.0,
+          "p95": 0.1923
+        },
+        "mfe": {
+          "n": 1500,
+          "mean": -0.771,
+          "sd": 1.2352,
+          "p05": -3.5,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 1500,
+          "mean": -31.4391,
+          "sd": 6.2899,
+          "p05": -42.6,
+          "median": -30.75,
+          "p95": -21.9
+        }
+      },
+      "generated": {
+        "tm": {
+          "n": 500,
+          "mean": 49.8246,
+          "sd": 2.7554,
+          "p05": 45.3523,
+          "median": 49.7261,
+          "p95": 54.343
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.1433,
+          "sd": 0.4726,
+          "p05": -0.9513,
+          "median": 0.0,
+          "p95": 0.1133
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.5868,
+          "sd": 1.0542,
+          "p05": -3.0,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -28.1156,
+          "sd": 2.3233,
+          "p05": -32.4,
+          "median": -27.8,
+          "p95": -24.9
+        }
+      },
+      "shuffled": {
+        "tm": {
+          "n": 500,
+          "mean": 49.8152,
+          "sd": 2.7906,
+          "p05": 45.3271,
+          "median": 49.7082,
+          "p95": 54.4046
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.1319,
+          "sd": 0.3891,
+          "p05": -1.1071,
+          "median": 0.0,
+          "p95": 0.0692
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.4628,
+          "sd": 0.9636,
+          "p05": -2.7,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -28.117,
+          "sd": 2.3231,
+          "p05": -32.4,
+          "median": -27.8,
+          "p95": -24.9
+        }
+      },
+      "random": {
+        "tm": {
+          "n": 500,
+          "mean": 51.4709,
+          "sd": 6.1895,
+          "p05": 41.1492,
+          "median": 51.7155,
+          "p95": 61.8464
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.2454,
+          "sd": 0.6027,
+          "p05": -1.6786,
+          "median": 0.0,
+          "p95": 0.101
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.7896,
+          "sd": 1.2987,
+          "p05": -3.7,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -29.046,
+          "sd": 4.6029,
+          "p05": -36.825,
+          "median": -29.1,
+          "p95": -21.59
+        }
+      }
+    },
+    "sirna": {
+      "training": {
+        "tm": {
+          "n": 1500,
+          "mean": 56.6195,
+          "sd": 5.8296,
+          "p05": 47.6667,
+          "median": 56.204,
+          "p95": 66.5871
+        },
+        "hairpin_dg": {
+          "n": 1500,
+          "mean": -0.348,
+          "sd": 0.7337,
+          "p05": -1.9961,
+          "median": 0.0,
+          "p95": 0.2275
+        },
+        "mfe": {
+          "n": 1500,
+          "mean": -1.2601,
+          "sd": 1.6975,
+          "p05": -4.8,
+          "median": -0.6,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 1500,
+          "mean": -34.6833,
+          "sd": 4.9857,
+          "p05": -43.005,
+          "median": -34.7,
+          "p95": -26.6
+        }
+      },
+      "training_top20pct": {
+        "tm": {
+          "n": 836,
+          "mean": 54.5566,
+          "sd": 4.8091,
+          "p05": 47.037,
+          "median": 54.2818,
+          "p95": 62.491
+        },
+        "hairpin_dg": {
+          "n": 836,
+          "mean": -0.1808,
+          "sd": 0.5007,
+          "p05": -1.2528,
+          "median": 0.0,
+          "p95": 0.2755
+        },
+        "mfe": {
+          "n": 836,
+          "mean": -0.7365,
+          "sd": 1.1023,
+          "p05": -3.2,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 836,
+          "mean": -32.8567,
+          "sd": 4.116,
+          "p05": -39.5,
+          "median": -32.9,
+          "p95": -26.175
+        }
+      },
+      "generated": {
+        "tm": {
+          "n": 500,
+          "mean": 56.3904,
+          "sd": 1.9448,
+          "p05": 53.4677,
+          "median": 56.5113,
+          "p95": 59.4825
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.2313,
+          "sd": 0.555,
+          "p05": -1.4773,
+          "median": 0.0,
+          "p95": 0.1598
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.9376,
+          "sd": 1.3956,
+          "p05": -3.805,
+          "median": -0.05,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -34.4988,
+          "sd": 1.5521,
+          "p05": -36.2,
+          "median": -34.8,
+          "p95": -31.89
+        }
+      },
+      "shuffled": {
+        "tm": {
+          "n": 500,
+          "mean": 56.4137,
+          "sd": 1.9425,
+          "p05": 53.4677,
+          "median": 56.5537,
+          "p95": 59.4825
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.252,
+          "sd": 0.5993,
+          "p05": -1.4138,
+          "median": 0.0,
+          "p95": 0.1683
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.9526,
+          "sd": 1.4,
+          "p05": -3.8,
+          "median": -0.1,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -34.4978,
+          "sd": 1.5559,
+          "p05": -36.2,
+          "median": -34.8,
+          "p95": -31.79
+        }
+      },
+      "random": {
+        "tm": {
+          "n": 500,
+          "mean": 55.6467,
+          "sd": 5.2626,
+          "p05": 47.6602,
+          "median": 55.501,
+          "p95": 64.4851
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.34,
+          "sd": 0.7289,
+          "p05": -1.7579,
+          "median": 0.0,
+          "p95": 0.1016
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -1.1398,
+          "sd": 1.531,
+          "p05": -4.2,
+          "median": -0.5,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -33.4594,
+          "sd": 4.3934,
+          "p05": -40.8,
+          "median": -33.3,
+          "p95": -26.295
+        }
+      }
+    },
+    "splice_switching": {
+      "training": {
+        "tm": {
+          "n": 1500,
+          "mean": 53.2868,
+          "sd": 6.856,
+          "p05": 41.5986,
+          "median": 53.7243,
+          "p95": 63.7039
+        },
+        "hairpin_dg": {
+          "n": 1500,
+          "mean": -0.3626,
+          "sd": 0.7597,
+          "p05": -2.0965,
+          "median": 0.0,
+          "p95": 0.133
+        },
+        "mfe": {
+          "n": 1500,
+          "mean": -1.2076,
+          "sd": 1.718,
+          "p05": -4.805,
+          "median": -0.3,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 1500,
+          "mean": -31.3491,
+          "sd": 6.0106,
+          "p05": -40.405,
+          "median": -32.1,
+          "p95": -20.9
+        }
+      },
+      "training_top20pct": {
+        "tm": {
+          "n": 439,
+          "mean": 52.4746,
+          "sd": 7.1389,
+          "p05": 41.38,
+          "median": 52.2591,
+          "p95": 63.1073
+        },
+        "hairpin_dg": {
+          "n": 439,
+          "mean": -0.3125,
+          "sd": 0.6916,
+          "p05": -1.9911,
+          "median": 0.0,
+          "p95": 0.0551
+        },
+        "mfe": {
+          "n": 439,
+          "mean": -1.0925,
+          "sd": 1.6807,
+          "p05": -4.9,
+          "median": -0.2,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 439,
+          "mean": -30.7394,
+          "sd": 6.2728,
+          "p05": -40.71,
+          "median": -30.9,
+          "p95": -20.98
+        }
+      },
+      "generated": {
+        "tm": {
+          "n": 500,
+          "mean": 52.4502,
+          "sd": 3.6302,
+          "p05": 45.3049,
+          "median": 53.0629,
+          "p95": 56.5127
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.239,
+          "sd": 0.5729,
+          "p05": -1.614,
+          "median": 0.0,
+          "p95": 0.1315
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.7798,
+          "sd": 1.2633,
+          "p05": -3.305,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -30.6964,
+          "sd": 3.0985,
+          "p05": -33.4,
+          "median": -31.5,
+          "p95": -24.195
+        }
+      },
+      "shuffled": {
+        "tm": {
+          "n": 500,
+          "mean": 52.4693,
+          "sd": 3.6407,
+          "p05": 45.3049,
+          "median": 53.0914,
+          "p95": 56.5127
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.1849,
+          "sd": 0.4861,
+          "p05": -1.2633,
+          "median": 0.0,
+          "p95": 0.1606
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.73,
+          "sd": 1.1702,
+          "p05": -2.905,
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -30.6998,
+          "sd": 3.0982,
+          "p05": -33.4,
+          "median": -31.5,
+          "p95": -24.195
+        }
+      },
+      "random": {
+        "tm": {
+          "n": 500,
+          "mean": 53.0807,
+          "sd": 6.3306,
+          "p05": 42.1891,
+          "median": 53.4929,
+          "p95": 62.4336
+        },
+        "hairpin_dg": {
+          "n": 500,
+          "mean": -0.2345,
+          "sd": 0.5588,
+          "p05": -1.5114,
+          "median": 0.0,
+          "p95": 0.1649
+        },
+        "mfe": {
+          "n": 500,
+          "mean": -0.9392,
+          "sd": 1.3613,
+          "p05": -3.7,
+          "median": -0.2,
+          "p95": 0.0
+        },
+        "duplex_dg": {
+          "n": 500,
+          "mean": -30.9366,
+          "sd": 5.064,
+          "p05": -38.305,
+          "median": -31.4,
+          "p95": -21.99
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "rnase_h": {
+      "generated_vs_training": {
+        "tm": {
+          "mean_difference": -2.9211,
+          "ci95_difference": [
+            -3.3471,
+            -2.4902
+          ],
+          "cohens_d": -0.5416,
+          "ks_statistic": 0.3647,
+          "ks_p": 7.193623203147929e-45,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1384,
+          "ci95_difference": [
+            0.0845,
+            0.1907
+          ],
+          "cohens_d": 0.2339,
+          "ks_statistic": 0.122,
+          "ks_p": 2.6628006768430027e-05,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.4189,
+          "ci95_difference": [
+            0.2945,
+            0.5427
+          ],
+          "cohens_d": 0.3022,
+          "ks_statistic": 0.1147,
+          "ks_p": 9.868078159145048e-05,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 3.3801,
+          "ci95_difference": [
+            2.9959,
+            3.7712
+          ],
+          "cohens_d": 0.6953,
+          "ks_statistic": 0.3827,
+          "ks_p": 1.7070070290647488e-49,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "shuffled_vs_training": {
+        "tm": {
+          "mean_difference": -2.9306,
+          "ci95_difference": [
+            -3.356,
+            -2.4979
+          ],
+          "cohens_d": -0.5425,
+          "ks_statistic": 0.3627,
+          "ks_p": 2.2673499535547216e-44,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1498,
+          "ci95_difference": [
+            0.1022,
+            0.1975
+          ],
+          "cohens_d": 0.2672,
+          "ks_statistic": 0.1113,
+          "ks_p": 0.00017421100069138235,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.5429,
+          "ci95_difference": [
+            0.4257,
+            0.6601
+          ],
+          "cohens_d": 0.4013,
+          "ks_statistic": 0.168,
+          "ks_p": 1.1016212621187764e-09,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 3.3787,
+          "ci95_difference": [
+            2.9966,
+            3.7691
+          ],
+          "cohens_d": 0.695,
+          "ks_statistic": 0.3787,
+          "ks_p": 1.9118682343138867e-48,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "random_vs_training": {
+        "tm": {
+          "mean_difference": -1.2748,
+          "ci95_difference": [
+            -1.9541,
+            -0.6076
+          ],
+          "cohens_d": -0.1912,
+          "ks_statistic": 0.1173,
+          "ks_p": 6.186926685064503e-05,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.0362,
+          "ci95_difference": [
+            -0.0282,
+            0.0993
+          ],
+          "cohens_d": 0.0559,
+          "ks_statistic": 0.0433,
+          "ks_p": 0.47557598312143495,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.2161,
+          "ci95_difference": [
+            0.0721,
+            0.3498
+          ],
+          "cohens_d": 0.1454,
+          "ks_statistic": 0.0493,
+          "ks_p": 0.3159372728199041,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 2.4497,
+          "ci95_difference": [
+            1.9109,
+            2.994
+          ],
+          "cohens_d": 0.4363,
+          "ks_statistic": 0.2147,
+          "ks_p": 1.38791409226726e-15,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "generated_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": -2.7724,
+          "ci95_difference": [
+            -3.1925,
+            -2.3532
+          ],
+          "cohens_d": -0.5318,
+          "ks_statistic": 0.3533,
+          "ks_p": 4.386557734535838e-42,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.0613,
+          "ci95_difference": [
+            0.0101,
+            0.11
+          ],
+          "cohens_d": 0.121,
+          "ks_statistic": 0.09,
+          "ks_p": 0.004441069086721221,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.1842,
+          "ci95_difference": [
+            0.0728,
+            0.2947
+          ],
+          "cohens_d": 0.1604,
+          "ks_statistic": 0.0867,
+          "ks_p": 0.006921559805917053,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 3.3235,
+          "ci95_difference": [
+            2.953,
+            3.6959
+          ],
+          "cohens_d": 0.701,
+          "ks_statistic": 0.378,
+          "ks_p": 2.851861064282678e-48,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "shuffled_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": -2.7819,
+          "ci95_difference": [
+            -3.2043,
+            -2.3649
+          ],
+          "cohens_d": -0.5327,
+          "ks_statistic": 0.3513,
+          "ks_p": 1.3291099568905563e-41,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.0727,
+          "ci95_difference": [
+            0.0276,
+            0.1178
+          ],
+          "cohens_d": 0.1548,
+          "ks_statistic": 0.0787,
+          "ks_p": 0.018748916256757734,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.3082,
+          "ci95_difference": [
+            0.2063,
+            0.4091
+          ],
+          "cohens_d": 0.2782,
+          "ks_statistic": 0.15,
+          "ks_p": 8.41842827777943e-08,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 3.3221,
+          "ci95_difference": [
+            2.9476,
+            3.7009
+          ],
+          "cohens_d": 0.7007,
+          "ks_statistic": 0.374,
+          "ks_p": 3.0900869802633473e-47,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "random_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": -1.1261,
+          "ci95_difference": [
+            -1.7853,
+            -0.4865
+          ],
+          "cohens_d": -0.1727,
+          "ks_statistic": 0.0947,
+          "ks_p": 0.0023196541217575905,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": -0.0409,
+          "ci95_difference": [
+            -0.0997,
+            0.0197
+          ],
+          "cohens_d": -0.0715,
+          "ks_statistic": 0.0367,
+          "ks_p": 0.6875870941144191,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": -0.0186,
+          "ci95_difference": [
+            -0.1491,
+            0.1099
+          ],
+          "cohens_d": -0.0147,
+          "ks_statistic": 0.0173,
+          "ks_p": 0.9998339495773595,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 2.3931,
+          "ci95_difference": [
+            1.8656,
+            2.9161
+          ],
+          "cohens_d": 0.4342,
+          "ks_statistic": 0.1993,
+          "ks_p": 1.7534086115784047e-13,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      }
+    },
+    "sirna": {
+      "generated_vs_training": {
+        "tm": {
+          "mean_difference": -0.2291,
+          "ci95_difference": [
+            -0.5672,
+            0.103
+          ],
+          "cohens_d": -0.0527,
+          "ks_statistic": 0.27,
+          "ks_p": 1.6196049300677122e-24,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1167,
+          "ci95_difference": [
+            0.0543,
+            0.176
+          ],
+          "cohens_d": 0.1794,
+          "ks_statistic": 0.0933,
+          "ks_p": 0.002802033691397906,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.3225,
+          "ci95_difference": [
+            0.1696,
+            0.4739
+          ],
+          "cohens_d": 0.2076,
+          "ks_statistic": 0.1053,
+          "ks_p": 0.0004644296368274986,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.1845,
+          "ci95_difference": [
+            -0.09,
+            0.4767
+          ],
+          "cohens_d": 0.05,
+          "ks_statistic": 0.3327,
+          "ks_p": 2.969774158218021e-37,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "shuffled_vs_training": {
+        "tm": {
+          "mean_difference": -0.2058,
+          "ci95_difference": [
+            -0.5463,
+            0.1167
+          ],
+          "cohens_d": -0.0474,
+          "ks_statistic": 0.27,
+          "ks_p": 1.6196049300677122e-24,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.096,
+          "ci95_difference": [
+            0.0299,
+            0.16
+          ],
+          "cohens_d": 0.1432,
+          "ks_statistic": 0.0893,
+          "ks_p": 0.004859756221624836,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.3075,
+          "ci95_difference": [
+            0.1498,
+            0.452
+          ],
+          "cohens_d": 0.1977,
+          "ks_statistic": 0.094,
+          "ks_p": 0.002550318167556436,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.1855,
+          "ci95_difference": [
+            -0.0891,
+            0.4762
+          ],
+          "cohens_d": 0.0502,
+          "ks_statistic": 0.3327,
+          "ks_p": 2.969774158218021e-37,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "random_vs_training": {
+        "tm": {
+          "mean_difference": -0.9729,
+          "ci95_difference": [
+            -1.5544,
+            -0.4086
+          ],
+          "cohens_d": -0.1752,
+          "ks_statistic": 0.084,
+          "ks_p": 0.009752723573785854,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.008,
+          "ci95_difference": [
+            -0.065,
+            0.083
+          ],
+          "cohens_d": 0.011,
+          "ks_statistic": 0.0493,
+          "ks_p": 0.3159372728199041,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.1203,
+          "ci95_difference": [
+            -0.0333,
+            0.2774
+          ],
+          "cohens_d": 0.0744,
+          "ks_statistic": 0.0313,
+          "ks_p": 0.8496413706244993,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 1.2239,
+          "ci95_difference": [
+            0.7662,
+            1.7077
+          ],
+          "cohens_d": 0.2605,
+          "ks_statistic": 0.1247,
+          "ks_p": 1.6205002255860217e-05,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "generated_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": 1.8338,
+          "ci95_difference": [
+            1.4731,
+            2.1983
+          ],
+          "cohens_d": 0.4999,
+          "ks_statistic": 0.3869,
+          "ks_p": 2.5939952142494386e-42,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": -0.0506,
+          "ci95_difference": [
+            -0.1122,
+            0.0113
+          ],
+          "cohens_d": -0.0957,
+          "ks_statistic": 0.0492,
+          "ks_p": 0.41837466475110596,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": -0.2011,
+          "ci95_difference": [
+            -0.3449,
+            -0.0597
+          ],
+          "cohens_d": -0.1599,
+          "ks_statistic": 0.0606,
+          "ks_p": 0.1912747072715688,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": -1.6421,
+          "ci95_difference": [
+            -1.9424,
+            -1.3332
+          ],
+          "cohens_d": -0.5279,
+          "ks_statistic": 0.3782,
+          "ks_p": 2.1162217742885105e-40,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "shuffled_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": 1.8571,
+          "ci95_difference": [
+            1.4939,
+            2.2156
+          ],
+          "cohens_d": 0.5064,
+          "ks_statistic": 0.3909,
+          "ks_p": 3.3144127987584154e-43,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": -0.0713,
+          "ci95_difference": [
+            -0.1352,
+            -0.008
+          ],
+          "cohens_d": -0.1291,
+          "ks_statistic": 0.0511,
+          "ks_p": 0.37196911825700457,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": -0.2161,
+          "ci95_difference": [
+            -0.3647,
+            -0.0774
+          ],
+          "cohens_d": -0.1715,
+          "ks_statistic": 0.0746,
+          "ks_p": 0.057856100086196786,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": -1.6411,
+          "ci95_difference": [
+            -1.944,
+            -1.3324
+          ],
+          "cohens_d": -0.5274,
+          "ks_statistic": 0.3766,
+          "ks_p": 4.6090760381586e-40,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "random_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": 1.0901,
+          "ci95_difference": [
+            0.5129,
+            1.658
+          ],
+          "cohens_d": 0.2162,
+          "ks_statistic": 0.1004,
+          "ks_p": 0.0033105299873164057,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": -0.1592,
+          "ci95_difference": [
+            -0.2275,
+            -0.0866
+          ],
+          "cohens_d": -0.2546,
+          "ks_statistic": 0.0913,
+          "ks_p": 0.009969463937036196,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": -0.4033,
+          "ci95_difference": [
+            -0.5475,
+            -0.2476
+          ],
+          "cohens_d": -0.3023,
+          "ks_statistic": 0.12,
+          "ks_p": 0.00021817899643858184,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": -0.6027,
+          "ci95_difference": [
+            -1.0692,
+            -0.1175
+          ],
+          "cohens_d": -0.1416,
+          "ks_statistic": 0.0689,
+          "ks_p": 0.09703789117153386,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      }
+    },
+    "splice_switching": {
+      "generated_vs_training": {
+        "tm": {
+          "mean_difference": -0.8366,
+          "ci95_difference": [
+            -1.3076,
+            -0.3581
+          ],
+          "cohens_d": -0.1525,
+          "ks_statistic": 0.3087,
+          "ks_p": 4.856298486822808e-32,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1236,
+          "ci95_difference": [
+            0.0617,
+            0.1897
+          ],
+          "cohens_d": 0.1838,
+          "ks_statistic": 0.09,
+          "ks_p": 0.004441069086721221,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.4278,
+          "ci95_difference": [
+            0.2803,
+            0.5695
+          ],
+          "cohens_d": 0.2837,
+          "ks_statistic": 0.1233,
+          "ks_p": 2.0800906734522194e-05,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.6527,
+          "ci95_difference": [
+            0.2521,
+            1.0597
+          ],
+          "cohens_d": 0.1365,
+          "ks_statistic": 0.366,
+          "ks_p": 3.3333236168908075e-45,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "shuffled_vs_training": {
+        "tm": {
+          "mean_difference": -0.8174,
+          "ci95_difference": [
+            -1.2879,
+            -0.3303
+          ],
+          "cohens_d": -0.1489,
+          "ks_statistic": 0.3087,
+          "ks_p": 4.856298486822808e-32,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1778,
+          "ci95_difference": [
+            0.1179,
+            0.2363
+          ],
+          "cohens_d": 0.2787,
+          "ks_statistic": 0.114,
+          "ks_p": 0.00011071030305689985,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.4776,
+          "ci95_difference": [
+            0.3412,
+            0.6091
+          ],
+          "cohens_d": 0.3249,
+          "ks_statistic": 0.114,
+          "ks_p": 0.00011071030305689985,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.6493,
+          "ci95_difference": [
+            0.2476,
+            1.0582
+          ],
+          "cohens_d": 0.1358,
+          "ks_statistic": 0.366,
+          "ks_p": 3.3333236168908075e-45,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "random_vs_training": {
+        "tm": {
+          "mean_difference": -0.206,
+          "ci95_difference": [
+            -0.8763,
+            0.4378
+          ],
+          "cohens_d": -0.0312,
+          "ks_statistic": 0.072,
+          "ks_p": 0.0399550095565654,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1281,
+          "ci95_difference": [
+            0.0691,
+            0.1906
+          ],
+          "cohens_d": 0.1921,
+          "ks_statistic": 0.082,
+          "ks_p": 0.012524363649254223,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.2684,
+          "ci95_difference": [
+            0.1179,
+            0.4178
+          ],
+          "cohens_d": 0.1732,
+          "ks_statistic": 0.066,
+          "ks_p": 0.07454372604789437,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.4125,
+          "ci95_difference": [
+            -0.1391,
+            0.9711
+          ],
+          "cohens_d": 0.0742,
+          "ks_statistic": 0.1127,
+          "ks_p": 0.0001390652337942734,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "generated_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": -0.0244,
+          "ci95_difference": [
+            -0.7562,
+            0.7301
+          ],
+          "cohens_d": -0.0043,
+          "ks_statistic": 0.2915,
+          "ks_p": 5.068097621831801e-18,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.0736,
+          "ci95_difference": [
+            -0.0113,
+            0.1534
+          ],
+          "cohens_d": 0.1158,
+          "ks_statistic": 0.0577,
+          "ks_p": 0.39696390871346066,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.3127,
+          "ci95_difference": [
+            0.1152,
+            0.5037
+          ],
+          "cohens_d": 0.2103,
+          "ks_statistic": 0.0969,
+          "ks_p": 0.02279946279348416,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.043,
+          "ci95_difference": [
+            -0.6086,
+            0.6718
+          ],
+          "cohens_d": 0.0087,
+          "ks_statistic": 0.31,
+          "ks_p": 2.336252163575001e-20,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "shuffled_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": -0.0053,
+          "ci95_difference": [
+            -0.7279,
+            0.7455
+          ],
+          "cohens_d": -0.0009,
+          "ks_statistic": 0.2915,
+          "ks_p": 5.068097621831801e-18,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.1277,
+          "ci95_difference": [
+            0.0522,
+            0.2051
+          ],
+          "cohens_d": 0.2136,
+          "ks_statistic": 0.0822,
+          "ks_p": 0.07908937112881312,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.3625,
+          "ci95_difference": [
+            0.174,
+            0.5535
+          ],
+          "cohens_d": 0.2503,
+          "ks_statistic": 0.0819,
+          "ks_p": 0.0811287500020377,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": 0.0396,
+          "ci95_difference": [
+            -0.6129,
+            0.673
+          ],
+          "cohens_d": 0.008,
+          "ks_statistic": 0.31,
+          "ks_p": 2.336252163575001e-20,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      },
+      "random_vs_training_top20pct": {
+        "tm": {
+          "mean_difference": 0.6061,
+          "ci95_difference": [
+            -0.2584,
+            1.4643
+          ],
+          "cohens_d": 0.0898,
+          "ks_statistic": 0.119,
+          "ks_p": 0.00238949894255203,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "hairpin_dg": {
+          "mean_difference": 0.0781,
+          "ci95_difference": [
+            -0.005,
+            0.1602
+          ],
+          "cohens_d": 0.1242,
+          "ks_statistic": 0.0463,
+          "ks_p": 0.6732391721040033,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "mfe": {
+          "mean_difference": 0.1533,
+          "ci95_difference": [
+            -0.045,
+            0.3415
+          ],
+          "cohens_d": 0.1002,
+          "ks_statistic": 0.0439,
+          "ks_p": 0.7343004248697164,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        },
+        "duplex_dg": {
+          "mean_difference": -0.1972,
+          "ci95_difference": [
+            -0.939,
+            0.5346
+          ],
+          "cohens_d": -0.0346,
+          "ks_statistic": 0.1161,
+          "ks_p": 0.0032750272528269102,
+          "reading": "KS p below 0.05 means the two distributions differ detectably; with n in the thousands this happens for differences too small to matter, so read Cohen's d alongside it"
+        }
+      }
+    }
+  },
+  "table": [
+    {
+      "mechanism": "rnase_h",
+      "set": "training",
+      "metric": "tm",
+      "mean": 52.7458,
+      "sd": 7.1123,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training",
+      "metric": "hairpin_dg",
+      "mean": -0.2817,
+      "sd": 0.6904,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training",
+      "metric": "mfe",
+      "mean": -1.0057,
+      "sd": 1.6529,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training",
+      "metric": "duplex_dg",
+      "mean": -31.4957,
+      "sd": 6.4711,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training_top20pct",
+      "metric": "tm",
+      "mean": 52.5971,
+      "sd": 6.8382,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training_top20pct",
+      "metric": "hairpin_dg",
+      "mean": -0.2046,
+      "sd": 0.5382,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training_top20pct",
+      "metric": "mfe",
+      "mean": -0.771,
+      "sd": 1.2352,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "training_top20pct",
+      "metric": "duplex_dg",
+      "mean": -31.4391,
+      "sd": 6.2899,
+      "n": 1500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "generated",
+      "metric": "tm",
+      "mean": 49.8246,
+      "sd": 2.7554,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "generated",
+      "metric": "hairpin_dg",
+      "mean": -0.1433,
+      "sd": 0.4726,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "generated",
+      "metric": "mfe",
+      "mean": -0.5868,
+      "sd": 1.0542,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "generated",
+      "metric": "duplex_dg",
+      "mean": -28.1156,
+      "sd": 2.3233,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "shuffled",
+      "metric": "tm",
+      "mean": 49.8152,
+      "sd": 2.7906,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "shuffled",
+      "metric": "hairpin_dg",
+      "mean": -0.1319,
+      "sd": 0.3891,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "shuffled",
+      "metric": "mfe",
+      "mean": -0.4628,
+      "sd": 0.9636,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "shuffled",
+      "metric": "duplex_dg",
+      "mean": -28.117,
+      "sd": 2.3231,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "random",
+      "metric": "tm",
+      "mean": 51.4709,
+      "sd": 6.1895,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "random",
+      "metric": "hairpin_dg",
+      "mean": -0.2454,
+      "sd": 0.6027,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "random",
+      "metric": "mfe",
+      "mean": -0.7896,
+      "sd": 1.2987,
+      "n": 500
+    },
+    {
+      "mechanism": "rnase_h",
+      "set": "random",
+      "metric": "duplex_dg",
+      "mean": -29.046,
+      "sd": 4.6029,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training",
+      "metric": "tm",
+      "mean": 56.6195,
+      "sd": 5.8296,
+      "n": 1500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training",
+      "metric": "hairpin_dg",
+      "mean": -0.348,
+      "sd": 0.7337,
+      "n": 1500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training",
+      "metric": "mfe",
+      "mean": -1.2601,
+      "sd": 1.6975,
+      "n": 1500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training",
+      "metric": "duplex_dg",
+      "mean": -34.6833,
+      "sd": 4.9857,
+      "n": 1500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training_top20pct",
+      "metric": "tm",
+      "mean": 54.5566,
+      "sd": 4.8091,
+      "n": 836
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training_top20pct",
+      "metric": "hairpin_dg",
+      "mean": -0.1808,
+      "sd": 0.5007,
+      "n": 836
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training_top20pct",
+      "metric": "mfe",
+      "mean": -0.7365,
+      "sd": 1.1023,
+      "n": 836
+    },
+    {
+      "mechanism": "sirna",
+      "set": "training_top20pct",
+      "metric": "duplex_dg",
+      "mean": -32.8567,
+      "sd": 4.116,
+      "n": 836
+    },
+    {
+      "mechanism": "sirna",
+      "set": "generated",
+      "metric": "tm",
+      "mean": 56.3904,
+      "sd": 1.9448,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "generated",
+      "metric": "hairpin_dg",
+      "mean": -0.2313,
+      "sd": 0.555,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "generated",
+      "metric": "mfe",
+      "mean": -0.9376,
+      "sd": 1.3956,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "generated",
+      "metric": "duplex_dg",
+      "mean": -34.4988,
+      "sd": 1.5521,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "shuffled",
+      "metric": "tm",
+      "mean": 56.4137,
+      "sd": 1.9425,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "shuffled",
+      "metric": "hairpin_dg",
+      "mean": -0.252,
+      "sd": 0.5993,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "shuffled",
+      "metric": "mfe",
+      "mean": -0.9526,
+      "sd": 1.4,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "shuffled",
+      "metric": "duplex_dg",
+      "mean": -34.4978,
+      "sd": 1.5559,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "random",
+      "metric": "tm",
+      "mean": 55.6467,
+      "sd": 5.2626,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "random",
+      "metric": "hairpin_dg",
+      "mean": -0.34,
+      "sd": 0.7289,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "random",
+      "metric": "mfe",
+      "mean": -1.1398,
+      "sd": 1.531,
+      "n": 500
+    },
+    {
+      "mechanism": "sirna",
+      "set": "random",
+      "metric": "duplex_dg",
+      "mean": -33.4594,
+      "sd": 4.3934,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training",
+      "metric": "tm",
+      "mean": 53.2868,
+      "sd": 6.856,
+      "n": 1500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training",
+      "metric": "hairpin_dg",
+      "mean": -0.3626,
+      "sd": 0.7597,
+      "n": 1500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training",
+      "metric": "mfe",
+      "mean": -1.2076,
+      "sd": 1.718,
+      "n": 1500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training",
+      "metric": "duplex_dg",
+      "mean": -31.3491,
+      "sd": 6.0106,
+      "n": 1500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training_top20pct",
+      "metric": "tm",
+      "mean": 52.4746,
+      "sd": 7.1389,
+      "n": 439
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training_top20pct",
+      "metric": "hairpin_dg",
+      "mean": -0.3125,
+      "sd": 0.6916,
+      "n": 439
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training_top20pct",
+      "metric": "mfe",
+      "mean": -1.0925,
+      "sd": 1.6807,
+      "n": 439
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "training_top20pct",
+      "metric": "duplex_dg",
+      "mean": -30.7394,
+      "sd": 6.2728,
+      "n": 439
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "generated",
+      "metric": "tm",
+      "mean": 52.4502,
+      "sd": 3.6302,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "generated",
+      "metric": "hairpin_dg",
+      "mean": -0.239,
+      "sd": 0.5729,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "generated",
+      "metric": "mfe",
+      "mean": -0.7798,
+      "sd": 1.2633,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "generated",
+      "metric": "duplex_dg",
+      "mean": -30.6964,
+      "sd": 3.0985,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "shuffled",
+      "metric": "tm",
+      "mean": 52.4693,
+      "sd": 3.6407,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "shuffled",
+      "metric": "hairpin_dg",
+      "mean": -0.1849,
+      "sd": 0.4861,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "shuffled",
+      "metric": "mfe",
+      "mean": -0.73,
+      "sd": 1.1702,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "shuffled",
+      "metric": "duplex_dg",
+      "mean": -30.6998,
+      "sd": 3.0982,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "random",
+      "metric": "tm",
+      "mean": 53.0807,
+      "sd": 6.3306,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "random",
+      "metric": "hairpin_dg",
+      "mean": -0.2345,
+      "sd": 0.5588,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "random",
+      "metric": "mfe",
+      "mean": -0.9392,
+      "sd": 1.3613,
+      "n": 500
+    },
+    {
+      "mechanism": "splice_switching",
+      "set": "random",
+      "metric": "duplex_dg",
+      "mean": -30.9366,
+      "sd": 5.064,
+      "n": 500
+    }
+  ]
+}

@@ -1,0 +1,842 @@
+{
+  "experiment": "exp12_ml_vs_heuristic",
+  "question": "Does the learned ranker beat the platform's existing composite heuristic on real held-out measurements?",
+  "protocol": {
+    "heuristic": "backend.services.gene_silencing_service._composite_score, called with the platform's own _calc_tm / _target_duplex_energy / _tm_fit_score",
+    "candidate_pool": "held-out benchmark oligos; the same pool is ranked by both policies, so this compares SELECTION, not sequence generation",
+    "tie_breaking": "random, seeded. The heuristic ties 27% of oligos within an experiment (it rounds to one decimal and 54% of oligos sit on the tm_fit plateau at 100), and a stable sort would have broken those ties by transcript position.",
+    "split": "grouped",
+    "split_note": "rnase_h: target_gene, 254 train / 85 test; sirna: experiment_id, 8 train / 3 test; splice_switching: target_gene, 4 train / 1 test",
+    "epochs": 8,
+    "mechanism_window_used": {
+      "rnase_h": "A1",
+      "splice_switching": "A2",
+      "sirna": null
+    }
+  },
+  "heuristic_coverage_gaps": {
+    "chem_tm_boost_keys": [
+      "2ome",
+      "gapmer",
+      "lna_gapmer",
+      "pmo"
+    ],
+    "optimal_tm_range_keys": [
+      "A1",
+      "A12",
+      "A15",
+      "A2"
+    ],
+    "finding": "CHEM_TM_BOOST has no MOE or cEt entry, and those two chemistries are essentially the entire RNase-H arm and all of splice-switching. Every benchmark oligo therefore gets a Tm boost of 0 and its Tm-fit term is computed from the unmodified-DNA Tm.",
+    "sirna_out_of_scope": "OPTIMAL_TM_RANGES has no siRNA key; that arm falls through to the default (50, 70) window, so its heuristic row is the heuristic applied outside its intended scope."
+  },
+  "table": [
+    {
+      "scorer": "platform_heuristic",
+      "n_groups": 528,
+      "ndcg@10": 0.5037,
+      "top10": 0.1444,
+      "pearson": 0.078,
+      "mrr": 0.0759,
+      "top5_mean_percentile": 46.786,
+      "top5_best_recovered": 0.0739
+    },
+    {
+      "scorer": "ml_ranker",
+      "n_groups": 528,
+      "ndcg@10": 0.7252,
+      "top10": 0.3397,
+      "pearson": 0.3656,
+      "mrr": 0.1884,
+      "top5_mean_percentile": 69.097,
+      "top5_best_recovered": 0.2746
+    },
+    {
+      "scorer": "random",
+      "n_groups": 528,
+      "ndcg@10": 0.5413,
+      "top10": 0.1663,
+      "pearson": 0.0026,
+      "mrr": 0.0786,
+      "top5_mean_percentile": 51.335,
+      "top5_best_recovered": 0.1004
+    }
+  ],
+  "results": {
+    "platform_heuristic": {
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.07593183522876246,
+        "n_groups_mrr": 528,
+        "pearson": 0.07796205879597624,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.47059248886613675,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.022727272727272728,
+        "n_groups_top1": 528,
+        "map@1": 0.022727272727272728,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.47371173251418264,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.050505050505050504,
+        "n_groups_top3": 528,
+        "map@3": 0.08996212121212122,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.48187497537349916,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.07628083491461102,
+        "n_groups_top5": 527,
+        "map@5": 0.14264969428631666,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.5037110305736244,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.14444444444444446,
+        "n_groups_top10": 522,
+        "map@10": 0.24375482728212616,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.544038968574043,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.2653306613226454,
+        "n_groups_top20": 499,
+        "map@20": 0.3311468606039368,
+        "n_groups_map@20": 499,
+        "ci95_ndcg@10": [
+          0.4567483385912642,
+          0.5595718461098897
+        ]
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.07641015985198384,
+          "n_groups_mrr": 523,
+          "pearson": 0.0809909545290193,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.47158368813575463,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.022944550669216062,
+          "n_groups_top1": 523,
+          "map@1": 0.022944550669216062,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.47385709650226626,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.05098789037603569,
+          "n_groups_top3": 523,
+          "map@3": 0.09082217973231356,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.4819000279744812,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.07662835249042145,
+          "n_groups_top5": 522,
+          "map@5": 0.14305821626223925,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.5037901193264513,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.1448742746615087,
+          "n_groups_top10": 517,
+          "map@10": 0.24406515765558315,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.5442055361720626,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.265587044534413,
+          "n_groups_top20": 494,
+          "map@20": 0.3319058071256364,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.4583996703140493,
+            0.5613653067793188
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.02635183850036049,
+          "n_groups_mrr": 3,
+          "pearson": -0.4072579388521403,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.4406884087735152,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.4659635179453021,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.0,
+          "n_groups_top3": 3,
+          "map@3": 0.0,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.49685732253664644,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.06666666666666667,
+          "n_groups_top5": 3,
+          "map@5": 0.16666666666666666,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.4414964847128522,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.06666666666666667,
+          "n_groups_top10": 3,
+          "map@10": 0.25,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.4868887526904726,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.18333333333333335,
+          "n_groups_top20": 3,
+          "map@20": 0.1908128456060787,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.33958766319183115,
+            0.5640829269162161
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.025219941348973606,
+          "n_groups_mrr": 2,
+          "pearson": 0.015250268943911238,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.25625,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.4473213714836256,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.45286272577243686,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.5765884067590277,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.15000000000000002,
+          "n_groups_top10": 2,
+          "map@10": 0.15416666666666667,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5886220956885767,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.32499999999999996,
+          "n_groups_top20": 2,
+          "map@20": 0.35418809224094494,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.5765884067590277,
+            0.5765884067590277
+          ]
+        }
+      },
+      "selection": {
+        "top5": {
+          "n_groups": 528,
+          "mean_percentile_of_selected": 46.786,
+          "best_oligo_recovered_rate": 0.0739,
+          "mean_group_size": 91.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_rnase_h": {
+          "n_groups": 523,
+          "mean_percentile_of_selected": 46.521,
+          "best_oligo_recovered_rate": 0.0822,
+          "mean_group_size": 90.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_sirna": {
+          "n_groups": 3,
+          "mean_percentile_of_selected": 34.94,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 230.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_splice_switching": {
+          "n_groups": 2,
+          "mean_percentile_of_selected": 47.448,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 70.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10": {
+          "n_groups": 522,
+          "mean_percentile_of_selected": 47.593,
+          "best_oligo_recovered_rate": 0.1264,
+          "mean_group_size": 92.4,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_rnase_h": {
+          "n_groups": 517,
+          "mean_percentile_of_selected": 47.475,
+          "best_oligo_recovered_rate": 0.1296,
+          "mean_group_size": 91.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_sirna": {
+          "n_groups": 3,
+          "mean_percentile_of_selected": 37.828,
+          "best_oligo_recovered_rate": 0.3333,
+          "mean_group_size": 230.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_splice_switching": {
+          "n_groups": 2,
+          "mean_percentile_of_selected": 60.84,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 70.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        }
+      }
+    },
+    "ml_ranker": {
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.1883763306209656,
+        "n_groups_mrr": 528,
+        "pearson": 0.3656372546617068,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.741577841146209,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.06818181818181818,
+        "n_groups_top1": 528,
+        "map@1": 0.06818181818181818,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.7262875395730638,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.163510101010101,
+        "n_groups_top3": 528,
+        "map@3": 0.28740530303030304,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.722206304809917,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.23908918406072105,
+        "n_groups_top5": 527,
+        "map@5": 0.43976913345983554,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.7251971155110505,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.3396551724137931,
+        "n_groups_top10": 522,
+        "map@10": 0.5480528544254369,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.7369965811791617,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.4703406813627255,
+        "n_groups_top20": 499,
+        "map@20": 0.6069736975615139,
+        "n_groups_map@20": 499,
+        "ci95_ndcg@10": [
+          0.7010274164196227,
+          0.7430203227228356
+        ]
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.18966309304287296,
+          "n_groups_mrr": 523,
+          "pearson": 0.36581969570819634,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.7435406531380502,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.06883365200764818,
+          "n_groups_top1": 523,
+          "map@1": 0.06883365200764818,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.727098259681802,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.16507329509241553,
+          "n_groups_top3": 523,
+          "map@3": 0.2901529636711281,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.7227752504218318,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.23946360153256704,
+          "n_groups_top5": 522,
+          "map@5": 0.441576202639421,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.7254067852024614,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.33984526112185687,
+          "n_groups_top10": 517,
+          "map@10": 0.549760712616589,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7370686273385584,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.4703441295546559,
+          "n_groups_top20": 494,
+          "map@20": 0.6077033677718123,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.6993836458669339,
+            0.744163497545269
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.06373781750239862,
+          "n_groups_mrr": 3,
+          "pearson": 0.5412809436801721,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.7187795113327029,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.7944184144148593,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.0,
+          "n_groups_top3": 3,
+          "map@3": 0.0,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.811334257029858,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.3333333333333333,
+          "n_groups_top5": 3,
+          "map@5": 0.4185185185185185,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.8154850131559006,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.3666666666666667,
+          "n_groups_top10": 3,
+          "map@10": 0.46460317460317463,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.8349208610930976,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5666666666666667,
+          "n_groups_top20": 3,
+          "map@20": 0.6441631473843276,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.7273959023180544,
+            0.8633849188413287
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.038845726970033294,
+          "n_groups_mrr": 2,
+          "pearson": 0.05455460800024898,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.26249999999999996,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.4120879188753465,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.4400195717702837,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.5355656538140603,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.25,
+          "n_groups_top10": 2,
+          "map@10": 0.23174603174603173,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5723147599372485,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.325,
+          "n_groups_top20": 2,
+          "map@20": 0.37096098088358154,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.5355656538140603,
+            0.5355656538140603
+          ]
+        }
+      },
+      "selection": {
+        "top5": {
+          "n_groups": 528,
+          "mean_percentile_of_selected": 69.097,
+          "best_oligo_recovered_rate": 0.2746,
+          "mean_group_size": 91.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_rnase_h": {
+          "n_groups": 523,
+          "mean_percentile_of_selected": 69.121,
+          "best_oligo_recovered_rate": 0.2715,
+          "mean_group_size": 90.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_sirna": {
+          "n_groups": 3,
+          "mean_percentile_of_selected": 79.83,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 230.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_splice_switching": {
+          "n_groups": 2,
+          "mean_percentile_of_selected": 46.627,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 70.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10": {
+          "n_groups": 522,
+          "mean_percentile_of_selected": 66.797,
+          "best_oligo_recovered_rate": 0.4272,
+          "mean_group_size": 92.4,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_rnase_h": {
+          "n_groups": 517,
+          "mean_percentile_of_selected": 66.784,
+          "best_oligo_recovered_rate": 0.4333,
+          "mean_group_size": 91.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_sirna": {
+          "n_groups": 3,
+          "mean_percentile_of_selected": 76.357,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 230.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_splice_switching": {
+          "n_groups": 2,
+          "mean_percentile_of_selected": 56.055,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 70.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        }
+      }
+    },
+    "random": {
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.07860462536859479,
+        "n_groups_mrr": 528,
+        "pearson": 0.002596000440215266,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.5151497551740857,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.01893939393939394,
+        "n_groups_top1": 528,
+        "map@1": 0.01893939393939394,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.5214740786039802,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.046085858585858584,
+        "n_groups_top3": 528,
+        "map@3": 0.08585858585858586,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.529569083135933,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.08766603415559773,
+        "n_groups_top5": 527,
+        "map@5": 0.15645161290322582,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.5412546712034499,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.16628352490421455,
+        "n_groups_top10": 522,
+        "map@10": 0.2927287013144977,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.5703656589382186,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.28647294589178357,
+        "n_groups_top20": 499,
+        "map@20": 0.38000098016272443,
+        "n_groups_map@20": 499,
+        "ci95_ndcg@10": [
+          0.5308243126935247,
+          0.5509498959150196
+        ]
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.07871165254280982,
+          "n_groups_mrr": 523,
+          "pearson": 0.0021215417311062548,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.5141942210844529,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.019120458891013385,
+          "n_groups_top1": 523,
+          "map@1": 0.019120458891013385,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.5214144023847572,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.045889101338432124,
+          "n_groups_top3": 523,
+          "map@3": 0.08604206500956023,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.5297331232523816,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.08773946360153256,
+          "n_groups_top5": 522,
+          "map@5": 0.15683269476372927,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.5413192221767448,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.16634429400386846,
+          "n_groups_top10": 517,
+          "map@10": 0.2934458896388987,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.5699822144384332,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.2859311740890688,
+          "n_groups_top20": 494,
+          "map@20": 0.38029288022539826,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.5309699559329778,
+            0.5517180315960034
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.06455957970042477,
+          "n_groups_mrr": 3,
+          "pearson": 0.0736413036556239,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.6501643682494747,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.5209112223986384,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.1111111111111111,
+          "n_groups_top3": 3,
+          "map@3": 0.1111111111111111,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.5338823388596912,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.13333333333333333,
+          "n_groups_top5": 3,
+          "map@5": 0.19444444444444442,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.5608495248541775,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.19999999999999998,
+          "n_groups_top10": 3,
+          "map@10": 0.31243386243386245,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.6471359159074935,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.3833333333333333,
+          "n_groups_top20": 3,
+          "map@20": 0.4027760835986009,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.509645601285927,
+            0.6404086871226202
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.07168458781362007,
+          "n_groups_mrr": 2,
+          "pearson": 0.019861768694554117,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.5625,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.5379236942387987,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.4802847291572092,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.4951759641306769,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.1,
+          "n_groups_top10": 2,
+          "map@10": 0.07777777777777778,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5499210649312902,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.275,
+          "n_groups_top20": 2,
+          "map@20": 0.2737390095284832,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.4951759641306769,
+            0.4951759641306769
+          ]
+        }
+      },
+      "selection": {
+        "top5": {
+          "n_groups": 528,
+          "mean_percentile_of_selected": 51.335,
+          "best_oligo_recovered_rate": 0.1004,
+          "mean_group_size": 91.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_rnase_h": {
+          "n_groups": 523,
+          "mean_percentile_of_selected": 51.371,
+          "best_oligo_recovered_rate": 0.0994,
+          "mean_group_size": 90.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_sirna": {
+          "n_groups": 3,
+          "mean_percentile_of_selected": 49.969,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 230.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top5_splice_switching": {
+          "n_groups": 2,
+          "mean_percentile_of_selected": 44.136,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 70.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10": {
+          "n_groups": 522,
+          "mean_percentile_of_selected": 50.487,
+          "best_oligo_recovered_rate": 0.1667,
+          "mean_group_size": 92.4,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_rnase_h": {
+          "n_groups": 517,
+          "mean_percentile_of_selected": 50.492,
+          "best_oligo_recovered_rate": 0.1605,
+          "mean_group_size": 91.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_sirna": {
+          "n_groups": 3,
+          "mean_percentile_of_selected": 52.392,
+          "best_oligo_recovered_rate": 0.0,
+          "mean_group_size": 230.7,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        },
+        "top10_splice_switching": {
+          "n_groups": 2,
+          "mean_percentile_of_selected": 46.211,
+          "best_oligo_recovered_rate": 0.5,
+          "mean_group_size": 70.5,
+          "note": "mean_percentile_of_selected is the mean within-experiment activity percentile of the k chosen oligos; picking at random gives ~50"
+        }
+      }
+    }
+  },
+  "paired_vs_heuristic": {
+    "ml_ranker_vs_platform_heuristic": {
+      "n_paired_groups": 528,
+      "ndcg@10": {
+        "n": 522,
+        "mean_diff": 0.22148608493742608,
+        "ci95": [
+          0.20346238804479522,
+          0.23928289078869502
+        ],
+        "p": 0.0
+      },
+      "top10": {
+        "n": 522,
+        "mean_diff": 0.19521072796934866,
+        "ci95": [
+          0.17681992337164754,
+          0.21379310344827587
+        ],
+        "p": 0.0
+      },
+      "pearson": {
+        "n": 527,
+        "mean_diff": 0.2876751958657306,
+        "ci95": [
+          0.258426376341522,
+          0.31769904485990635
+        ],
+        "p": 0.0
+      },
+      "mrr": {
+        "n": 528,
+        "mean_diff": 0.11244449539220312,
+        "ci95": [
+          0.08548454921550386,
+          0.14016312487411295
+        ],
+        "p": 0.0
+      }
+    },
+    "random_vs_platform_heuristic": {
+      "n_paired_groups": 528,
+      "ndcg@10": {
+        "n": 522,
+        "mean_diff": 0.03754364062982566,
+        "ci95": [
+          0.02270500069993873,
+          0.05242114715014084
+        ],
+        "p": 0.0
+      },
+      "top10": {
+        "n": 522,
+        "mean_diff": 0.021839080459770115,
+        "ci95": [
+          0.007854406130268199,
+          0.035823754789272036
+        ],
+        "p": 0.0025
+      },
+      "pearson": {
+        "n": 527,
+        "mean_diff": -0.07536605835576098,
+        "ci95": [
+          -0.10080122611020856,
+          -0.04946466098298163
+        ],
+        "p": 0.0
+      },
+      "mrr": {
+        "n": 528,
+        "mean_diff": 0.0026727901398323414,
+        "ci95": [
+          -0.014808998462134697,
+          0.02028096511027138
+        ],
+        "p": 0.7616
+      }
+    }
+  },
+  "policy_agreement": {
+    "n_groups": 528,
+    "mean_within_group_pearson": -0.143,
+    "note": "correlation between the two policies' scores inside each experiment; near zero means they are ranking on essentially unrelated grounds"
+  }
+}

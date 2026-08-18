@@ -1,0 +1,223 @@
+{
+  "experiment": "exp05_cross_chemistry",
+  "question": "Does a ranker trained on one chemistry class rank a different chemistry?",
+  "protocol": {
+    "restricted_to": "rnase_h",
+    "why_restricted": "chemistry and mechanism are confounded across the benchmark (all splice_switching rows are MOE, all siRNA rows unmodified); only inside rnase_h does chemistry vary at fixed mechanism",
+    "split": "one gene split shared by every cell",
+    "model": "SEQUENCE-ONLY conv ranker; chemistry is not an input, so an off-diagonal cell is not measuring an untrained chemistry embedding",
+    "epochs": 8,
+    "metric": "ndcg@10",
+    "min_rows_to_train": 2000
+  },
+  "chemistry_class_counts": {
+    "MOE": 94818,
+    "cEt": 52141,
+    "MOE+cEt": 9921,
+    "unmodified": 1578,
+    "PS": 628,
+    "OMe+cEt": 22,
+    "F+cEt": 1
+  },
+  "excluded_too_small": {
+    "unmodified": 1578,
+    "PS": 628,
+    "OMe+cEt": 22,
+    "F+cEt": 1
+  },
+  "matrix": {
+    "MOE": {
+      "MOE": {
+        "value": 0.712,
+        "top10": 0.3175,
+        "pearson": 0.372,
+        "mrr": 0.1477,
+        "n_groups": 329,
+        "n_genes": 75,
+        "ci95": [
+          0.6822013721427456,
+          0.7251811061990462
+        ]
+      },
+      "cEt": {
+        "value": 0.6478,
+        "top10": 0.2603,
+        "pearson": 0.2081,
+        "mrr": 0.143,
+        "n_groups": 145,
+        "n_genes": 13,
+        "ci95": [
+          0.6303148870506735,
+          0.6900810056591354
+        ]
+      },
+      "MOE+cEt": {
+        "value": 0.7047,
+        "top10": 0.3111,
+        "pearson": 0.2505,
+        "mrr": 0.2037,
+        "n_groups": 46,
+        "n_genes": 7,
+        "ci95": [
+          0.6757163998274454,
+          0.7352490257642174
+        ]
+      }
+    },
+    "cEt": {
+      "MOE": {
+        "value": 0.6545,
+        "top10": 0.2488,
+        "pearson": 0.2545,
+        "mrr": 0.1195,
+        "n_groups": 329,
+        "n_genes": 75,
+        "ci95": [
+          0.620430775959319,
+          0.6741691504503144
+        ]
+      },
+      "cEt": {
+        "value": 0.7049,
+        "top10": 0.3213,
+        "pearson": 0.3103,
+        "mrr": 0.1525,
+        "n_groups": 145,
+        "n_genes": 13,
+        "ci95": [
+          0.6541741062917523,
+          0.7283210581257189
+        ]
+      },
+      "MOE+cEt": {
+        "value": 0.7063,
+        "top10": 0.3111,
+        "pearson": 0.2804,
+        "mrr": 0.2031,
+        "n_groups": 46,
+        "n_genes": 7,
+        "ci95": [
+          0.6673273546591024,
+          0.738238065082694
+        ]
+      }
+    },
+    "MOE+cEt": {
+      "MOE": {
+        "value": 0.6412,
+        "top10": 0.2371,
+        "pearson": 0.192,
+        "mrr": 0.102,
+        "n_groups": 329,
+        "n_genes": 75,
+        "ci95": [
+          0.6201165857500861,
+          0.6586397102130318
+        ]
+      },
+      "cEt": {
+        "value": 0.6626,
+        "top10": 0.2745,
+        "pearson": 0.2416,
+        "mrr": 0.134,
+        "n_groups": 145,
+        "n_genes": 13,
+        "ci95": [
+          0.6216909687053567,
+          0.6883173264192254
+        ]
+      },
+      "MOE+cEt": {
+        "value": 0.6955,
+        "top10": 0.3067,
+        "pearson": 0.1992,
+        "mrr": 0.1965,
+        "n_groups": 46,
+        "n_genes": 7,
+        "ci95": [
+          0.6018047046694874,
+          0.7201130916638101
+        ]
+      }
+    }
+  },
+  "cells": [
+    {
+      "train_chem": "MOE",
+      "test_chem": "MOE",
+      "diagonal": true,
+      "ndcg@10": 0.712,
+      "top10": 0.3175,
+      "n_groups": 329
+    },
+    {
+      "train_chem": "MOE",
+      "test_chem": "cEt",
+      "diagonal": false,
+      "ndcg@10": 0.6478,
+      "top10": 0.2603,
+      "n_groups": 145
+    },
+    {
+      "train_chem": "MOE",
+      "test_chem": "MOE+cEt",
+      "diagonal": false,
+      "ndcg@10": 0.7047,
+      "top10": 0.3111,
+      "n_groups": 46
+    },
+    {
+      "train_chem": "cEt",
+      "test_chem": "MOE",
+      "diagonal": false,
+      "ndcg@10": 0.6545,
+      "top10": 0.2488,
+      "n_groups": 329
+    },
+    {
+      "train_chem": "cEt",
+      "test_chem": "cEt",
+      "diagonal": true,
+      "ndcg@10": 0.7049,
+      "top10": 0.3213,
+      "n_groups": 145
+    },
+    {
+      "train_chem": "cEt",
+      "test_chem": "MOE+cEt",
+      "diagonal": false,
+      "ndcg@10": 0.7063,
+      "top10": 0.3111,
+      "n_groups": 46
+    },
+    {
+      "train_chem": "MOE+cEt",
+      "test_chem": "MOE",
+      "diagonal": false,
+      "ndcg@10": 0.6412,
+      "top10": 0.2371,
+      "n_groups": 329
+    },
+    {
+      "train_chem": "MOE+cEt",
+      "test_chem": "cEt",
+      "diagonal": false,
+      "ndcg@10": 0.6626,
+      "top10": 0.2745,
+      "n_groups": 145
+    },
+    {
+      "train_chem": "MOE+cEt",
+      "test_chem": "MOE+cEt",
+      "diagonal": true,
+      "ndcg@10": 0.6955,
+      "top10": 0.3067,
+      "n_groups": 46
+    }
+  ],
+  "summary": {
+    "mean_diagonal": 0.7041,
+    "mean_off_diagonal": 0.6695,
+    "transfer_penalty": 0.0346
+  }
+}

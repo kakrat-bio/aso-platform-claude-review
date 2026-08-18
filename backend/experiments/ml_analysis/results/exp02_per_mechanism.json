@@ -1,0 +1,491 @@
+{
+  "experiment": "exp02_per_mechanism",
+  "question": "Is the pooled ranker an RNase-H ranker, and do the scarce mechanisms do better trained alone?",
+  "protocol": {
+    "split": "grouped",
+    "split_note": "rnase_h: target_gene, 254 train / 85 test; sirna: experiment_id, 8 train / 3 test; splice_switching: target_gene, 4 train / 1 test",
+    "epochs": 8,
+    "model": "conditioned conv ranker, pairwise margin loss"
+  },
+  "dominance": {
+    "rnase_h": {
+      "rows": 111631,
+      "row_share": 0.9547,
+      "experiment_groups": 1410,
+      "training_pairs_per_epoch": 88358,
+      "pair_share": 0.9803
+    },
+    "sirna": {
+      "rows": 3255,
+      "row_share": 0.0278,
+      "experiment_groups": 8,
+      "training_pairs_per_epoch": 512,
+      "pair_share": 0.0057
+    },
+    "splice_switching": {
+      "rows": 2040,
+      "row_share": 0.0174,
+      "experiment_groups": 20,
+      "training_pairs_per_epoch": 1261,
+      "pair_share": 0.014
+    }
+  },
+  "table": [
+    {
+      "modality": "rnase_h",
+      "pair_share": 0.9803,
+      "test_groups": 523,
+      "test_genes": 85,
+      "pooled_ndcg@10": 0.7254,
+      "pooled_top10": 0.3398,
+      "pooled_pearson": 0.3658,
+      "pooled_mrr": 0.1897,
+      "spec_ndcg@10": 0.7186,
+      "spec_top10": 0.3313,
+      "spec_pearson": 0.3672,
+      "spec_mrr": 0.1787
+    },
+    {
+      "modality": "sirna",
+      "pair_share": 0.0057,
+      "test_groups": 3,
+      "test_genes": 3,
+      "pooled_ndcg@10": 0.8155,
+      "pooled_top10": 0.3667,
+      "pooled_pearson": 0.5413,
+      "pooled_mrr": 0.0637,
+      "spec_ndcg@10": 0.8115,
+      "spec_top10": 0.3667,
+      "spec_pearson": 0.5131,
+      "spec_mrr": 0.1008
+    },
+    {
+      "modality": "splice_switching",
+      "pair_share": 0.014,
+      "test_groups": 2,
+      "test_genes": 1,
+      "pooled_ndcg@10": 0.5356,
+      "pooled_top10": 0.25,
+      "pooled_pearson": 0.0546,
+      "pooled_mrr": 0.0388,
+      "spec_ndcg@10": 0.6284,
+      "spec_top10": 0.2,
+      "spec_pearson": 0.087,
+      "spec_mrr": 0.043
+    }
+  ],
+  "detail": {
+    "rnase_h": {
+      "dominance": {
+        "rows": 111631,
+        "row_share": 0.9547,
+        "experiment_groups": 1410,
+        "training_pairs_per_epoch": 88358,
+        "pair_share": 0.9803
+      },
+      "pooled": {
+        "n_groups": 523,
+        "n_genes": 85,
+        "mrr": 0.18966309304287296,
+        "n_groups_mrr": 523,
+        "pearson": 0.36581969570819634,
+        "n_groups_pearson": 522,
+        "ndcg@1": 0.7435406531380502,
+        "n_groups_ndcg@1": 523,
+        "top1": 0.06883365200764818,
+        "n_groups_top1": 523,
+        "map@1": 0.06883365200764818,
+        "n_groups_map@1": 523,
+        "ndcg@3": 0.727098259681802,
+        "n_groups_ndcg@3": 523,
+        "top3": 0.16507329509241553,
+        "n_groups_top3": 523,
+        "map@3": 0.2901529636711281,
+        "n_groups_map@3": 523,
+        "ndcg@5": 0.7227752504218318,
+        "n_groups_ndcg@5": 522,
+        "top5": 0.23946360153256704,
+        "n_groups_top5": 522,
+        "map@5": 0.441576202639421,
+        "n_groups_map@5": 522,
+        "ndcg@10": 0.7254067852024614,
+        "n_groups_ndcg@10": 517,
+        "top10": 0.33984526112185687,
+        "n_groups_top10": 517,
+        "map@10": 0.549760712616589,
+        "n_groups_map@10": 517,
+        "ndcg@20": 0.7370686273385584,
+        "n_groups_ndcg@20": 494,
+        "top20": 0.4703441295546559,
+        "n_groups_top20": 494,
+        "map@20": 0.6077033677718123,
+        "n_groups_map@20": 494,
+        "ci95_ndcg@10": [
+          0.6993836458669339,
+          0.744163497545269
+        ],
+        "ci95_pearson": [
+          0.3064103087022854,
+          0.4062394810037602
+        ]
+      },
+      "specialist": {
+        "n_groups": 523,
+        "n_genes": 85,
+        "mrr": 0.17874483784074285,
+        "n_groups_mrr": 523,
+        "pearson": 0.36721756430576846,
+        "n_groups_pearson": 522,
+        "ndcg@1": 0.7253439023127163,
+        "n_groups_ndcg@1": 523,
+        "top1": 0.06692160611854685,
+        "n_groups_top1": 523,
+        "map@1": 0.06692160611854685,
+        "n_groups_map@1": 523,
+        "ndcg@3": 0.7229718752453673,
+        "n_groups_ndcg@3": 523,
+        "top3": 0.1618865519439133,
+        "n_groups_top3": 523,
+        "map@3": 0.30050987890376035,
+        "n_groups_map@3": 523,
+        "ndcg@5": 0.7187425639659153,
+        "n_groups_ndcg@5": 522,
+        "top5": 0.22873563218390805,
+        "n_groups_top5": 522,
+        "map@5": 0.43215996168582377,
+        "n_groups_map@5": 522,
+        "ndcg@10": 0.7185899146025666,
+        "n_groups_ndcg@10": 517,
+        "top10": 0.33133462282398457,
+        "n_groups_top10": 517,
+        "map@10": 0.5356419376619478,
+        "n_groups_map@10": 517,
+        "ndcg@20": 0.7328469351465438,
+        "n_groups_ndcg@20": 494,
+        "top20": 0.45678137651821865,
+        "n_groups_top20": 494,
+        "map@20": 0.5958345487941393,
+        "n_groups_map@20": 494,
+        "ci95_ndcg@10": [
+          0.694514246220495,
+          0.7365430479321433
+        ]
+      },
+      "specialist_error": null,
+      "specialist_minus_pooled": {
+        "ndcg@10": {
+          "n": 517,
+          "mean_diff": -0.006816870599894773,
+          "ci95": [
+            -0.015067318597645171,
+            0.0011537771951156044
+          ],
+          "p": 0.1022
+        },
+        "top10": {
+          "n": 517,
+          "mean_diff": -0.008510638297872342,
+          "ci95": [
+            -0.020889748549323014,
+            0.0034816247582205016
+          ],
+          "p": 0.1699
+        },
+        "pearson": {
+          "n": 522,
+          "mean_diff": 0.0013978685975721368,
+          "ci95": [
+            -0.010014064525310031,
+            0.012764208804307245
+          ],
+          "p": 0.8097
+        },
+        "mrr": {
+          "n": 523,
+          "mean_diff": -0.010918255202130089,
+          "ci95": [
+            -0.036280707521929925,
+            0.01439776567782112
+          ],
+          "p": 0.3991
+        }
+      }
+    },
+    "sirna": {
+      "dominance": {
+        "rows": 3255,
+        "row_share": 0.0278,
+        "experiment_groups": 8,
+        "training_pairs_per_epoch": 512,
+        "pair_share": 0.0057
+      },
+      "pooled": {
+        "n_groups": 3,
+        "n_genes": 3,
+        "mrr": 0.06373781750239862,
+        "n_groups_mrr": 3,
+        "pearson": 0.5412809436801721,
+        "n_groups_pearson": 3,
+        "ndcg@1": 0.7187795113327029,
+        "n_groups_ndcg@1": 3,
+        "top1": 0.0,
+        "n_groups_top1": 3,
+        "map@1": 0.0,
+        "n_groups_map@1": 3,
+        "ndcg@3": 0.7944184144148593,
+        "n_groups_ndcg@3": 3,
+        "top3": 0.0,
+        "n_groups_top3": 3,
+        "map@3": 0.0,
+        "n_groups_map@3": 3,
+        "ndcg@5": 0.811334257029858,
+        "n_groups_ndcg@5": 3,
+        "top5": 0.3333333333333333,
+        "n_groups_top5": 3,
+        "map@5": 0.4185185185185185,
+        "n_groups_map@5": 3,
+        "ndcg@10": 0.8154850131559006,
+        "n_groups_ndcg@10": 3,
+        "top10": 0.3666666666666667,
+        "n_groups_top10": 3,
+        "map@10": 0.46460317460317463,
+        "n_groups_map@10": 3,
+        "ndcg@20": 0.8349208610930976,
+        "n_groups_ndcg@20": 3,
+        "top20": 0.5666666666666667,
+        "n_groups_top20": 3,
+        "map@20": 0.6441631473843276,
+        "n_groups_map@20": 3,
+        "ci95_ndcg@10": [
+          0.7273959023180544,
+          0.8633849188413287
+        ],
+        "ci95_pearson": [
+          0.4419112287135108,
+          0.7379503724582942
+        ]
+      },
+      "specialist": {
+        "n_groups": 3,
+        "n_genes": 3,
+        "mrr": 0.10084566596194504,
+        "n_groups_mrr": 3,
+        "pearson": 0.5130931141265528,
+        "n_groups_pearson": 3,
+        "ndcg@1": 0.8628557245578522,
+        "n_groups_ndcg@1": 3,
+        "top1": 0.0,
+        "n_groups_top1": 3,
+        "map@1": 0.0,
+        "n_groups_map@1": 3,
+        "ndcg@3": 0.8042241304420891,
+        "n_groups_ndcg@3": 3,
+        "top3": 0.2222222222222222,
+        "n_groups_top3": 3,
+        "map@3": 0.5,
+        "n_groups_map@3": 3,
+        "ndcg@5": 0.8117419419738342,
+        "n_groups_ndcg@5": 3,
+        "top5": 0.3333333333333333,
+        "n_groups_top5": 3,
+        "map@5": 0.44999999999999996,
+        "n_groups_map@5": 3,
+        "ndcg@10": 0.8115357796677477,
+        "n_groups_ndcg@10": 3,
+        "top10": 0.3666666666666667,
+        "n_groups_top10": 3,
+        "map@10": 0.542962962962963,
+        "n_groups_map@10": 3,
+        "ndcg@20": 0.8366873942141105,
+        "n_groups_ndcg@20": 3,
+        "top20": 0.5499999999999999,
+        "n_groups_top20": 3,
+        "map@20": 0.6069084104320172,
+        "n_groups_map@20": 3,
+        "ci95_ndcg@10": [
+          0.7924807470443268,
+          0.8429136665539406
+        ]
+      },
+      "specialist_error": null,
+      "specialist_minus_pooled": {
+        "ndcg@10": {
+          "n": 3,
+          "mean_diff": -0.003949233488152866,
+          "ci95": [
+            -0.056461292903342786,
+            0.0650848447262724
+          ],
+          "p": 0.7783
+        },
+        "top10": {
+          "n": 3,
+          "mean_diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p": 1.0
+        },
+        "pearson": {
+          "n": 3,
+          "mean_diff": -0.028187829553619315,
+          "ci95": [
+            -0.04438669067680051,
+            -0.016787519186424904
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 3,
+          "mean_diff": 0.037107848459546414,
+          "ci95": [
+            0.006749858196256381,
+            0.05714285714285716
+          ],
+          "p": 0.0
+        }
+      }
+    },
+    "splice_switching": {
+      "dominance": {
+        "rows": 2040,
+        "row_share": 0.0174,
+        "experiment_groups": 20,
+        "training_pairs_per_epoch": 1261,
+        "pair_share": 0.014
+      },
+      "pooled": {
+        "n_groups": 2,
+        "n_genes": 1,
+        "mrr": 0.038845726970033294,
+        "n_groups_mrr": 2,
+        "pearson": 0.05455460800024898,
+        "n_groups_pearson": 2,
+        "ndcg@1": 0.26249999999999996,
+        "n_groups_ndcg@1": 2,
+        "top1": 0.0,
+        "n_groups_top1": 2,
+        "map@1": 0.0,
+        "n_groups_map@1": 2,
+        "ndcg@3": 0.4120879188753465,
+        "n_groups_ndcg@3": 2,
+        "top3": 0.0,
+        "n_groups_top3": 2,
+        "map@3": 0.0,
+        "n_groups_map@3": 2,
+        "ndcg@5": 0.4400195717702837,
+        "n_groups_ndcg@5": 2,
+        "top5": 0.0,
+        "n_groups_top5": 2,
+        "map@5": 0.0,
+        "n_groups_map@5": 2,
+        "ndcg@10": 0.5355656538140603,
+        "n_groups_ndcg@10": 2,
+        "top10": 0.25,
+        "n_groups_top10": 2,
+        "map@10": 0.23174603174603173,
+        "n_groups_map@10": 2,
+        "ndcg@20": 0.5723147599372485,
+        "n_groups_ndcg@20": 2,
+        "top20": 0.325,
+        "n_groups_top20": 2,
+        "map@20": 0.37096098088358154,
+        "n_groups_map@20": 2,
+        "ci95_ndcg@10": [
+          0.5355656538140603,
+          0.5355656538140603
+        ],
+        "ci95_pearson": [
+          0.05455460800024898,
+          0.05455460800024898
+        ]
+      },
+      "specialist": {
+        "n_groups": 2,
+        "n_genes": 1,
+        "mrr": 0.04296066252587991,
+        "n_groups_mrr": 2,
+        "pearson": 0.08699533433328262,
+        "n_groups_pearson": 2,
+        "ndcg@1": 0.74375,
+        "n_groups_ndcg@1": 2,
+        "top1": 0.0,
+        "n_groups_top1": 2,
+        "map@1": 0.0,
+        "n_groups_map@1": 2,
+        "ndcg@3": 0.6369430819604378,
+        "n_groups_ndcg@3": 2,
+        "top3": 0.0,
+        "n_groups_top3": 2,
+        "map@3": 0.0,
+        "n_groups_map@3": 2,
+        "ndcg@5": 0.6151054617854608,
+        "n_groups_ndcg@5": 2,
+        "top5": 0.2,
+        "n_groups_top5": 2,
+        "map@5": 0.25,
+        "n_groups_map@5": 2,
+        "ndcg@10": 0.6283808049836503,
+        "n_groups_ndcg@10": 2,
+        "top10": 0.2,
+        "n_groups_top10": 2,
+        "map@10": 0.31666666666666665,
+        "n_groups_map@10": 2,
+        "ndcg@20": 0.6375945791708458,
+        "n_groups_ndcg@20": 2,
+        "top20": 0.375,
+        "n_groups_top20": 2,
+        "map@20": 0.4598829342803248,
+        "n_groups_map@20": 2,
+        "ci95_ndcg@10": [
+          0.6283808049836503,
+          0.6283808049836503
+        ]
+      },
+      "specialist_error": null,
+      "specialist_minus_pooled": {
+        "ndcg@10": {
+          "n": 2,
+          "mean_diff": 0.09281515116959,
+          "ci95": [
+            -0.044296569164519184,
+            0.22992687150369917
+          ],
+          "p": 0.5078
+        },
+        "top10": {
+          "n": 2,
+          "mean_diff": -0.05,
+          "ci95": [
+            -0.2,
+            0.1
+          ],
+          "p": 0.5078
+        },
+        "pearson": {
+          "n": 2,
+          "mean_diff": 0.03244072633303363,
+          "ci95": [
+            -0.05879901186859571,
+            0.12368046453466297
+          ],
+          "p": 0.5078
+        },
+        "mrr": {
+          "n": 2,
+          "mean_diff": 0.00411493555584662,
+          "ci95": [
+            -0.00437517090511348,
+            0.01260504201680672
+          ],
+          "p": 0.5078
+        }
+      }
+    }
+  },
+  "caveats": [
+    "splice_switching has 5 genes in total, so its held-out set is a single gene; read its row as one gene's result, not a mean.",
+    "sirna is grouped by experiment_id because its target_gene column holds one value per row."
+  ]
+}

@@ -1,0 +1,1204 @@
+{
+  "experiment": "exp01_class_imbalance",
+  "question": "Does upweighting siRNA / splice-switching pairs change held-out ranking quality?",
+  "protocol": {
+    "split": "grouped",
+    "split_note": "rnase_h: target_gene, 254 train / 85 test; sirna: experiment_id, 8 train / 3 test; splice_switching: target_gene, 4 train / 1 test",
+    "epochs": 8,
+    "model": "conditioned conv ranker, pairwise margin loss",
+    "weight_unit": "pair (the loss has no per-row term)"
+  },
+  "training_composition": {
+    "rows": {
+      "rnase_h": 111631,
+      "sirna": 3255,
+      "splice_switching": 2040
+    },
+    "experiment_groups": {
+      "rnase_h": 1410,
+      "sirna": 8,
+      "splice_switching": 20
+    },
+    "row_share": {
+      "rnase_h": 0.9547,
+      "sirna": 0.0278,
+      "splice_switching": 0.0174
+    }
+  },
+  "table": [
+    {
+      "scheme": "none",
+      "modality": "rnase_h",
+      "n_groups": 523,
+      "ndcg@10": 0.7254,
+      "top10": 0.3398,
+      "pearson": 0.3658,
+      "mrr": 0.1897
+    },
+    {
+      "scheme": "none",
+      "modality": "sirna",
+      "n_groups": 3,
+      "ndcg@10": 0.8155,
+      "top10": 0.3667,
+      "pearson": 0.5413,
+      "mrr": 0.0637
+    },
+    {
+      "scheme": "none",
+      "modality": "splice_switching",
+      "n_groups": 2,
+      "ndcg@10": 0.5356,
+      "top10": 0.25,
+      "pearson": 0.0546,
+      "mrr": 0.0388
+    },
+    {
+      "scheme": "inverse_rows",
+      "modality": "rnase_h",
+      "n_groups": 523,
+      "ndcg@10": 0.7019,
+      "top10": 0.3139,
+      "pearson": 0.3316,
+      "mrr": 0.1577
+    },
+    {
+      "scheme": "inverse_rows",
+      "modality": "sirna",
+      "n_groups": 3,
+      "ndcg@10": 0.7755,
+      "top10": 0.2,
+      "pearson": 0.5277,
+      "mrr": 0.3474
+    },
+    {
+      "scheme": "inverse_rows",
+      "modality": "splice_switching",
+      "n_groups": 2,
+      "ndcg@10": 0.6014,
+      "top10": 0.3,
+      "pearson": 0.1584,
+      "mrr": 0.1759
+    },
+    {
+      "scheme": "inverse_exps",
+      "modality": "rnase_h",
+      "n_groups": 523,
+      "ndcg@10": 0.6865,
+      "top10": 0.305,
+      "pearson": 0.2952,
+      "mrr": 0.146
+    },
+    {
+      "scheme": "inverse_exps",
+      "modality": "sirna",
+      "n_groups": 3,
+      "ndcg@10": 0.8473,
+      "top10": 0.3667,
+      "pearson": 0.5964,
+      "mrr": 0.3582
+    },
+    {
+      "scheme": "inverse_exps",
+      "modality": "splice_switching",
+      "n_groups": 2,
+      "ndcg@10": 0.6023,
+      "top10": 0.35,
+      "pearson": 0.1,
+      "mrr": 0.107
+    },
+    {
+      "scheme": "sqrt_inverse",
+      "modality": "rnase_h",
+      "n_groups": 523,
+      "ndcg@10": 0.7266,
+      "top10": 0.3456,
+      "pearson": 0.3692,
+      "mrr": 0.1815
+    },
+    {
+      "scheme": "sqrt_inverse",
+      "modality": "sirna",
+      "n_groups": 3,
+      "ndcg@10": 0.8777,
+      "top10": 0.4,
+      "pearson": 0.6345,
+      "mrr": 0.0589
+    },
+    {
+      "scheme": "sqrt_inverse",
+      "modality": "splice_switching",
+      "n_groups": 2,
+      "ndcg@10": 0.4883,
+      "top10": 0.1,
+      "pearson": 0.0613,
+      "mrr": 0.0703
+    }
+  ],
+  "evaluation_power": {
+    "rnase_h": {
+      "held_out_experiment_groups": 523,
+      "held_out_genes": 85,
+      "total_groups_in_benchmark": 1941,
+      "between_group_sd_of_ndcg@10": 0.1189,
+      "median_ci_half_width_ndcg@10": 0.0079,
+      "reading": "adequately powered"
+    },
+    "sirna": {
+      "held_out_experiment_groups": 3,
+      "held_out_genes": 3,
+      "total_groups_in_benchmark": 11,
+      "between_group_sd_of_ndcg@10": 0.0764,
+      "median_ci_half_width_ndcg@10": 0.0567,
+      "reading": "UNDERPOWERED: 3 held-out groups. A null result on this arm means no effect large enough to see, not no effect. The interval itself is also unreliable here: a paired bootstrap over 3 values resamples 3 numbers, so it can come out narrow by accident and must not be read as a tight bound. Treat every p-value on this arm as indicative only."
+    },
+    "splice_switching": {
+      "held_out_experiment_groups": 2,
+      "held_out_genes": 1,
+      "total_groups_in_benchmark": 22,
+      "between_group_sd_of_ndcg@10": 0.2745,
+      "median_ci_half_width_ndcg@10": 0.0781,
+      "reading": "UNDERPOWERED: 2 held-out groups. A null result on this arm means no effect large enough to see, not no effect. The interval itself is also unreliable here: a paired bootstrap over 2 values resamples 2 numbers, so it can come out narrow by accident and must not be read as a tight bound. Treat every p-value on this arm as indicative only."
+    }
+  },
+  "results": {
+    "none": {
+      "weights": {},
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.1883763306209656,
+        "n_groups_mrr": 528,
+        "pearson": 0.3656372546617068,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.741577841146209,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.06818181818181818,
+        "n_groups_top1": 528,
+        "map@1": 0.06818181818181818,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.7262875395730638,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.163510101010101,
+        "n_groups_top3": 528,
+        "map@3": 0.28740530303030304,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.722206304809917,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.23908918406072105,
+        "n_groups_top5": 527,
+        "map@5": 0.43976913345983554,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.7251971155110505,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.3396551724137931,
+        "n_groups_top10": 522,
+        "map@10": 0.5480528544254369,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.7369965811791617,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.4703406813627255,
+        "n_groups_top20": 499,
+        "map@20": 0.6069736975615139,
+        "n_groups_map@20": 499
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.18966309304287296,
+          "n_groups_mrr": 523,
+          "pearson": 0.36581969570819634,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.7435406531380502,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.06883365200764818,
+          "n_groups_top1": 523,
+          "map@1": 0.06883365200764818,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.727098259681802,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.16507329509241553,
+          "n_groups_top3": 523,
+          "map@3": 0.2901529636711281,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.7227752504218318,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.23946360153256704,
+          "n_groups_top5": 522,
+          "map@5": 0.441576202639421,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.7254067852024614,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.33984526112185687,
+          "n_groups_top10": 517,
+          "map@10": 0.549760712616589,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7370686273385584,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.4703441295546559,
+          "n_groups_top20": 494,
+          "map@20": 0.6077033677718123,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.6993836458669339,
+            0.744163497545269
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.06373781750239862,
+          "n_groups_mrr": 3,
+          "pearson": 0.5412809436801721,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.7187795113327029,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.7944184144148593,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.0,
+          "n_groups_top3": 3,
+          "map@3": 0.0,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.811334257029858,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.3333333333333333,
+          "n_groups_top5": 3,
+          "map@5": 0.4185185185185185,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.8154850131559006,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.3666666666666667,
+          "n_groups_top10": 3,
+          "map@10": 0.46460317460317463,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.8349208610930976,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5666666666666667,
+          "n_groups_top20": 3,
+          "map@20": 0.6441631473843276,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.7273959023180544,
+            0.8633849188413287
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.038845726970033294,
+          "n_groups_mrr": 2,
+          "pearson": 0.05455460800024898,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.26249999999999996,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.4120879188753465,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.4400195717702837,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.5355656538140603,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.25,
+          "n_groups_top10": 2,
+          "map@10": 0.23174603174603173,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.5723147599372485,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.325,
+          "n_groups_top20": 2,
+          "map@20": 0.37096098088358154,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.5355656538140603,
+            0.5355656538140603
+          ]
+        }
+      }
+    },
+    "inverse_rows": {
+      "weights": {
+        "rnase_h": 1.0,
+        "sirna": 34.29523809523809,
+        "splice_switching": 54.72107843137254
+      },
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.15880092874691548,
+        "n_groups_mrr": 528,
+        "pearson": 0.3320348974349086,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.6877790150275889,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.054924242424242424,
+        "n_groups_top1": 528,
+        "map@1": 0.054924242424242424,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.6853749558216679,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.1376262626262626,
+        "n_groups_top3": 528,
+        "map@3": 0.23737373737373738,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.6952083476114649,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.20455407969639472,
+        "n_groups_top5": 527,
+        "map@5": 0.373084018553658,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.7019187262097468,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.3132183908045977,
+        "n_groups_top10": 522,
+        "map@10": 0.49294016233568777,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.7164246162873797,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.4445891783567134,
+        "n_groups_top20": 499,
+        "map@20": 0.5740725285025778,
+        "n_groups_map@20": 499
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.15765362455979806,
+          "n_groups_mrr": 523,
+          "pearson": 0.3315754329084434,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.6875507665365934,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.055449330783938815,
+          "n_groups_top1": 523,
+          "map@1": 0.055449330783938815,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.6850898167378254,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.1370299553855959,
+          "n_groups_top3": 523,
+          "map@3": 0.23518164435946462,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.695130466007615,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.2045977011494253,
+          "n_groups_top5": 522,
+          "map@5": 0.37260270327799067,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.7018803595293449,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.31392649903288206,
+          "n_groups_top10": 517,
+          "map@10": 0.4935223106005781,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7160850420888638,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.4442307692307692,
+          "n_groups_top20": 494,
+          "map@20": 0.5743659727486988,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.6804054010101033,
+            0.7170758913375257
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.3473976272483735,
+          "n_groups_mrr": 3,
+          "pearson": 0.5277117052448572,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.9694230119762035,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.8485335040424565,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.2222222222222222,
+          "n_groups_top3": 3,
+          "map@3": 0.6666666666666666,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.8165404276530216,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.20000000000000004,
+          "n_groups_top5": 3,
+          "map@5": 0.5833333333333334,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.7755292583348585,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.19999999999999998,
+          "n_groups_top10": 3,
+          "map@10": 0.5222222222222223,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.8234583366042915,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5499999999999999,
+          "n_groups_top20": 3,
+          "map@20": 0.6762690420843156,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.7035066294253477,
+            0.8420841094304669
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.17592592592592593,
+          "n_groups_mrr": 2,
+          "pearson": 0.15843992712740174,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.32499999999999996,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.5152010039152748,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.16666666666666666,
+          "n_groups_top3": 2,
+          "map@3": 0.16666666666666666,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.5335373261539833,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.2,
+          "n_groups_top5": 2,
+          "map@5": 0.18333333333333335,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.6014207149060176,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.3,
+          "n_groups_top10": 2,
+          "map@10": 0.29853174603174604,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.6397488628454571,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.375,
+          "n_groups_top20": 2,
+          "map@20": 0.348297029338051,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.6014207149060176,
+            0.6014207149060176
+          ]
+        }
+      }
+    },
+    "inverse_exps": {
+      "weights": {
+        "rnase_h": 1.0,
+        "sirna": 176.25,
+        "splice_switching": 70.5
+      },
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.14703003932117792,
+        "n_groups_mrr": 528,
+        "pearson": 0.2961271354623173,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.667443157179662,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.04924242424242424,
+        "n_groups_top1": 528,
+        "map@1": 0.04924242424242424,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.6707310693091891,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.1313131313131313,
+        "n_groups_top3": 528,
+        "map@3": 0.22458964646464646,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.6744756643912602,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.18519924098671725,
+        "n_groups_top5": 527,
+        "map@5": 0.33654332700822265,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.6871105308975409,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.3055555555555556,
+        "n_groups_top10": 522,
+        "map@10": 0.47803214797342236,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.7034566943476399,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.43426853707414825,
+        "n_groups_top20": 499,
+        "map@20": 0.5590560214816022,
+        "n_groups_map@20": 499
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.1459715323846203,
+          "n_groups_mrr": 523,
+          "pearson": 0.2951527924625699,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.6665926690422684,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.0497131931166348,
+          "n_groups_top1": 523,
+          "map@1": 0.0497131931166348,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.6702226069311633,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.13065646908859144,
+          "n_groups_top3": 523,
+          "map@3": 0.22227533460803056,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.6739414747011034,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.18429118773946362,
+          "n_groups_top5": 522,
+          "map@5": 0.3355842911877394,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.6865091716966732,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.30502901353965184,
+          "n_groups_top10": 517,
+          "map@10": 0.4780880809591549,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7028651502922678,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.4336032388663968,
+          "n_groups_top20": 494,
+          "map@20": 0.5590403643695011,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.6599377852355574,
+            0.7041793489983803
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.35822160579442136,
+          "n_groups_mrr": 3,
+          "pearson": 0.5964351895379263,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.9315070272517082,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.8736149034108213,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.3333333333333333,
+          "n_groups_top3": 3,
+          "map@3": 0.7777777777777777,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.8729370801869983,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.3333333333333333,
+          "n_groups_top5": 3,
+          "map@5": 0.5777777777777777,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.8472542974410221,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.3666666666666667,
+          "n_groups_top10": 3,
+          "map@10": 0.5736772486772486,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.8503366848484154,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5833333333333334,
+          "n_groups_top20": 3,
+          "map@20": 0.6934815100691649,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.8040401207103828,
+            0.9007672384515931
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.10704225352112677,
+          "n_groups_mrr": 2,
+          "pearson": 0.09996857728296157,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.49374999999999997,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.4993682300104916,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.5162070498285467,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.2,
+          "n_groups_top5": 2,
+          "map@5": 0.225,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.6023462345066037,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.35,
+          "n_groups_top10": 2,
+          "map@10": 0.3201058201058201,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.629248090273415,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.375,
+          "n_groups_top20": 2,
+          "map@20": 0.36128509528922326,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.6023462345066037,
+            0.6023462345066037
+          ]
+        }
+      }
+    },
+    "sqrt_inverse": {
+      "weights": {
+        "rnase_h": 1.0,
+        "sirna": 5.856213631284133,
+        "splice_switching": 7.397369696816061
+      },
+      "overall": {
+        "n_groups": 528,
+        "n_genes": 89,
+        "mrr": 0.1803950820304944,
+        "n_groups_mrr": 528,
+        "pearson": 0.3695446199538335,
+        "n_groups_pearson": 527,
+        "ndcg@1": 0.7200718499630482,
+        "n_groups_ndcg@1": 528,
+        "top1": 0.06818181818181818,
+        "n_groups_top1": 528,
+        "map@1": 0.06818181818181818,
+        "n_groups_map@1": 528,
+        "ndcg@3": 0.7209445837750599,
+        "n_groups_ndcg@3": 528,
+        "top3": 0.17234848484848486,
+        "n_groups_top3": 528,
+        "map@3": 0.30303030303030304,
+        "n_groups_map@3": 528,
+        "ndcg@5": 0.7196415514880079,
+        "n_groups_ndcg@5": 527,
+        "top5": 0.23491461100569258,
+        "n_groups_top5": 527,
+        "map@5": 0.43605576639257854,
+        "n_groups_map@5": 527,
+        "ndcg@10": 0.7265469002475856,
+        "n_groups_ndcg@10": 522,
+        "top10": 0.3450191570881226,
+        "n_groups_top10": 522,
+        "map@10": 0.5414587924711534,
+        "n_groups_map@10": 522,
+        "ndcg@20": 0.738307350453201,
+        "n_groups_ndcg@20": 499,
+        "top20": 0.4725450901803607,
+        "n_groups_top20": 499,
+        "map@20": 0.6085636526141549,
+        "n_groups_map@20": 499
+      },
+      "by_modality": {
+        "rnase_h": {
+          "n_groups": 523,
+          "n_genes": 85,
+          "mrr": 0.1815130724626379,
+          "n_groups_mrr": 523,
+          "pearson": 0.36920311702213665,
+          "n_groups_pearson": 522,
+          "ndcg@1": 0.7202645945803252,
+          "n_groups_ndcg@1": 523,
+          "top1": 0.06883365200764818,
+          "n_groups_top1": 523,
+          "map@1": 0.06883365200764818,
+          "n_groups_map@1": 523,
+          "ndcg@3": 0.7210437159584655,
+          "n_groups_ndcg@3": 523,
+          "top3": 0.17208413001912046,
+          "n_groups_top3": 523,
+          "map@3": 0.30146590184831107,
+          "n_groups_map@3": 523,
+          "ndcg@5": 0.719907505837315,
+          "n_groups_ndcg@5": 522,
+          "top5": 0.23486590038314178,
+          "n_groups_top5": 522,
+          "map@5": 0.435379416773095,
+          "n_groups_map@5": 522,
+          "ndcg@10": 0.7265913636385883,
+          "n_groups_ndcg@10": 517,
+          "top10": 0.34564796905222434,
+          "n_groups_top10": 517,
+          "map@10": 0.5415343817876745,
+          "n_groups_map@10": 517,
+          "ndcg@20": 0.7382141464110953,
+          "n_groups_ndcg@20": 494,
+          "top20": 0.4726720647773279,
+          "n_groups_top20": 494,
+          "map@20": 0.608457545108511,
+          "n_groups_map@20": 494,
+          "ci95_ndcg@10": [
+            0.6988173397630605,
+            0.7451536457839667
+          ]
+        },
+        "sirna": {
+          "n_groups": 3,
+          "n_genes": 3,
+          "mrr": 0.05888047138047139,
+          "n_groups_mrr": 3,
+          "pearson": 0.634470824538126,
+          "n_groups_pearson": 3,
+          "ndcg@1": 0.991517938326449,
+          "n_groups_ndcg@1": 3,
+          "top1": 0.0,
+          "n_groups_top1": 3,
+          "map@1": 0.0,
+          "n_groups_map@1": 3,
+          "ndcg@3": 0.9054335586243378,
+          "n_groups_ndcg@3": 3,
+          "top3": 0.3333333333333333,
+          "n_groups_top3": 3,
+          "map@3": 0.7777777777777778,
+          "n_groups_map@3": 3,
+          "ndcg@5": 0.8662576632215137,
+          "n_groups_ndcg@5": 3,
+          "top5": 0.4000000000000001,
+          "n_groups_top5": 3,
+          "map@5": 0.8444444444444444,
+          "n_groups_map@5": 3,
+          "ndcg@10": 0.877686482223423,
+          "n_groups_ndcg@10": 3,
+          "top10": 0.39999999999999997,
+          "n_groups_top10": 3,
+          "map@10": 0.8315343915343916,
+          "n_groups_map@10": 3,
+          "ndcg@20": 0.8767718249949854,
+          "n_groups_ndcg@20": 3,
+          "top20": 0.5499999999999999,
+          "n_groups_top20": 3,
+          "map@20": 0.8016867912221022,
+          "n_groups_map@20": 3,
+          "ci95_ndcg@10": [
+            0.8445677196194007,
+            0.9214025788833607
+          ]
+        },
+        "splice_switching": {
+          "n_groups": 2,
+          "n_genes": 1,
+          "mrr": 0.0703125,
+          "n_groups_mrr": 2,
+          "pearson": 0.061287578250266504,
+          "n_groups_pearson": 2,
+          "ndcg@1": 0.26249999999999996,
+          "n_groups_ndcg@1": 2,
+          "top1": 0.0,
+          "n_groups_top1": 2,
+          "map@1": 0.0,
+          "n_groups_map@1": 2,
+          "ndcg@3": 0.4182880555405901,
+          "n_groups_ndcg@3": 2,
+          "top3": 0.0,
+          "n_groups_top3": 2,
+          "map@3": 0.0,
+          "n_groups_map@3": 2,
+          "ndcg@5": 0.4303032987185992,
+          "n_groups_ndcg@5": 2,
+          "top5": 0.0,
+          "n_groups_top5": 2,
+          "map@5": 0.0,
+          "n_groups_map@5": 2,
+          "ndcg@10": 0.4883437407096407,
+          "n_groups_ndcg@10": 2,
+          "top10": 0.1,
+          "n_groups_top10": 2,
+          "map@10": 0.08680555555555555,
+          "n_groups_map@10": 2,
+          "ndcg@20": 0.553632037040617,
+          "n_groups_ndcg@20": 2,
+          "top20": 0.325,
+          "n_groups_top20": 2,
+          "map@20": 0.3450874985962705,
+          "n_groups_map@20": 2,
+          "ci95_ndcg@10": [
+            0.4883437407096407,
+            0.4883437407096407
+          ]
+        }
+      }
+    }
+  },
+  "paired_vs_none": {
+    "inverse_rows": {
+      "rnase_h": {
+        "ndcg@10": {
+          "n": 517,
+          "mean_diff": -0.023526425673116483,
+          "ci95": [
+            -0.03149958490490353,
+            -0.015631737633024376
+          ],
+          "p": 0.0
+        },
+        "top10": {
+          "n": 517,
+          "mean_diff": -0.025918762088974853,
+          "ci95": [
+            -0.037524177949709865,
+            -0.014313346228239847
+          ],
+          "p": 0.0
+        },
+        "pearson": {
+          "n": 522,
+          "mean_diff": -0.03424426279975294,
+          "ci95": [
+            -0.045301373474297184,
+            -0.023551563614642893
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 523,
+          "mean_diff": -0.03200946848307491,
+          "ci95": [
+            -0.053552120527509704,
+            -0.010201281307678669
+          ],
+          "p": 0.0036
+        }
+      },
+      "sirna": {
+        "ndcg@10": {
+          "n": 3,
+          "mean_diff": -0.03995575482104197,
+          "ci95": [
+            -0.08238788269256758,
+            -0.013590108877851614
+          ],
+          "p": 0.0369
+        },
+        "top10": {
+          "n": 3,
+          "mean_diff": -0.16666666666666666,
+          "ci95": [
+            -0.20000000000000004,
+            -0.10000000000000002
+          ],
+          "p": 0.0
+        },
+        "pearson": {
+          "n": 3,
+          "mean_diff": -0.013569238435314879,
+          "ci95": [
+            -0.016560798046155067,
+            -0.011355685125143289
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 3,
+          "mean_diff": 0.2836598097459749,
+          "ci95": [
+            -0.0050167224080267525,
+            0.8571428571428572
+          ],
+          "p": 0.5515
+        }
+      },
+      "splice_switching": {
+        "ndcg@10": {
+          "n": 2,
+          "mean_diff": 0.06585506109195727,
+          "ci95": [
+            -0.01328039276749482,
+            0.14499051495140935
+          ],
+          "p": 0.5078
+        },
+        "top10": {
+          "n": 2,
+          "mean_diff": 0.05,
+          "ci95": [
+            0.0,
+            0.1
+          ],
+          "p": 0.5078
+        },
+        "pearson": {
+          "n": 2,
+          "mean_diff": 0.10388531912715274,
+          "ci95": [
+            0.0607605407923127,
+            0.14701009746199278
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 2,
+          "mean_diff": 0.1370801989558926,
+          "ci95": [
+            -0.0003494060097833686,
+            0.2745098039215686
+          ],
+          "p": 0.5078
+        }
+      }
+    },
+    "inverse_exps": {
+      "rnase_h": {
+        "ndcg@10": {
+          "n": 517,
+          "mean_diff": -0.038897613505788124,
+          "ci95": [
+            -0.04744765726972757,
+            -0.030388788651890736
+          ],
+          "p": 0.0
+        },
+        "top10": {
+          "n": 517,
+          "mean_diff": -0.03481624758220503,
+          "ci95": [
+            -0.047582205029013544,
+            -0.022243713733075435
+          ],
+          "p": 0.0
+        },
+        "pearson": {
+          "n": 522,
+          "mean_diff": -0.07066690324562638,
+          "ci95": [
+            -0.08510686290562357,
+            -0.056322010083411624
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 523,
+          "mean_diff": -0.04369156065825267,
+          "ci95": [
+            -0.06703867010121602,
+            -0.020129545884844568
+          ],
+          "p": 0.0001
+        }
+      },
+      "sirna": {
+        "ndcg@10": {
+          "n": 3,
+          "mean_diff": 0.031769284285121636,
+          "ci95": [
+            -0.05934479813094595,
+            0.17337133613353872
+          ],
+          "p": 0.5515
+        },
+        "top10": {
+          "n": 3,
+          "mean_diff": 0.0,
+          "ci95": [
+            -0.09999999999999998,
+            0.09999999999999998
+          ],
+          "p": 1.0
+        },
+        "pearson": {
+          "n": 3,
+          "mean_diff": 0.05515424585775416,
+          "ci95": [
+            -0.022697063568335785,
+            0.1587074206764683
+          ],
+          "p": 0.2919
+        },
+        "mrr": {
+          "n": 3,
+          "mean_diff": 0.2944837882920227,
+          "ci95": [
+            -0.0016418028257952483,
+            0.8571428571428572
+          ],
+          "p": 0.0692
+        }
+      },
+      "splice_switching": {
+        "ndcg@10": {
+          "n": 2,
+          "mean_diff": 0.06678058069254342,
+          "ci95": [
+            0.026605633582841626,
+            0.10695552780224521
+          ],
+          "p": 0.0
+        },
+        "top10": {
+          "n": 2,
+          "mean_diff": 0.09999999999999999,
+          "ci95": [
+            0.09999999999999998,
+            0.1
+          ],
+          "p": 0.0
+        },
+        "pearson": {
+          "n": 2,
+          "mean_diff": 0.045413969282712595,
+          "ci95": [
+            0.0444863463907616,
+            0.04634159217466359
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 2,
+          "mean_diff": 0.06819652655109347,
+          "ci95": [
+            -0.004783417486048365,
+            0.1411764705882353
+          ],
+          "p": 0.5078
+        }
+      }
+    },
+    "sqrt_inverse": {
+      "rnase_h": {
+        "ndcg@10": {
+          "n": 517,
+          "mean_diff": 0.0011845784361269956,
+          "ci95": [
+            -0.004924297909746601,
+            0.007389130319957711
+          ],
+          "p": 0.72
+        },
+        "top10": {
+          "n": 517,
+          "mean_diff": 0.005802707930367505,
+          "ci95": [
+            -0.0040618955512572545,
+            0.015865570599613084
+          ],
+          "p": 0.2604
+        },
+        "pearson": {
+          "n": 522,
+          "mean_diff": 0.003383421313940315,
+          "ci95": [
+            -0.00409259351197797,
+            0.010632585671290813
+          ],
+          "p": 0.3676
+        },
+        "mrr": {
+          "n": 523,
+          "mean_diff": -0.00815002058023509,
+          "ci95": [
+            -0.025775185557367,
+            0.009748948041128342
+          ],
+          "p": 0.369
+        }
+      },
+      "sirna": {
+        "ndcg@10": {
+          "n": 3,
+          "mean_diff": 0.06220146906752244,
+          "ci95": [
+            0.003704229326178754,
+            0.11717181730134629
+          ],
+          "p": 0.0
+        },
+        "top10": {
+          "n": 3,
+          "mean_diff": 0.033333333333333326,
+          "ci95": [
+            0.0,
+            0.09999999999999998
+          ],
+          "p": 0.5515
+        },
+        "pearson": {
+          "n": 3,
+          "mean_diff": 0.09318988085795384,
+          "ci95": [
+            0.06962877700691894,
+            0.12872695852477484
+          ],
+          "p": 0.0
+        },
+        "mrr": {
+          "n": 3,
+          "mean_diff": -0.004857346121927245,
+          "ci95": [
+            -0.031746031746031744,
+            0.019021739130434784
+          ],
+          "p": 0.7431
+        }
+      },
+      "splice_switching": {
+        "ndcg@10": {
+          "n": 2,
+          "mean_diff": -0.04722191310441959,
+          "ci95": [
+            -0.1252720944041913,
+            0.030828268195352115
+          ],
+          "p": 0.5078
+        },
+        "top10": {
+          "n": 2,
+          "mean_diff": -0.15,
+          "ci95": [
+            -0.3,
+            0.0
+          ],
+          "p": 0.5078
+        },
+        "pearson": {
+          "n": 2,
+          "mean_diff": 0.006732970250017525,
+          "ci95": [
+            -0.0003383293677437782,
+            0.013804269867778829
+          ],
+          "p": 0.5078
+        },
+        "mrr": {
+          "n": 2,
+          "mean_diff": 0.031466773029966706,
+          "ci95": [
+            -0.003242924528301886,
+            0.0661764705882353
+          ],
+          "p": 0.5078
+        }
+      }
+    }
+  }
+}
