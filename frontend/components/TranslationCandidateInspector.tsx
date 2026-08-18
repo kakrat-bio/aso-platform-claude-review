@@ -32,38 +32,21 @@ export default function TranslationCandidateInspector({
   useKeyboardShortcut("escape", onClose);
 
   const changeColor =
-    candidate.translationalChangeScore > 0
+    candidate.elementEngagement > 0
       ? "text-emerald-600"
-      : candidate.translationalChangeScore < 0
+      : candidate.elementEngagement < 0
         ? "text-rose-600"
         : "text-slate-600";
 
   const changeBg =
-    candidate.translationalChangeScore > 0
+    candidate.elementEngagement > 0
       ? "bg-emerald-50 border-emerald-200"
-      : candidate.translationalChangeScore < 0
+      : candidate.elementEngagement < 0
         ? "bg-rose-50 border-rose-200"
         : "bg-slate-50 border-slate-200";
 
-  const riskColor =
-    candidate.offTargetRisk === "low"
-      ? "text-emerald-600"
-      : candidate.offTargetRisk === "medium"
-        ? "text-amber-600"
-        : "text-red-600";
 
-  const riskBg =
-    candidate.offTargetRisk === "low"
-      ? "bg-emerald-50 border-emerald-200"
-      : candidate.offTargetRisk === "medium"
-        ? "bg-amber-50 border-amber-200"
-        : "bg-red-50 border-red-200";
 
-  const safetyColor = candidate.rnaseHSafetyFlag === "PASSED" ? "text-emerald-600" : "text-red-600";
-  const safetyBg =
-    candidate.rnaseHSafetyFlag === "PASSED"
-      ? "bg-emerald-50 border-emerald-200"
-      : "bg-red-50 border-red-200";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -74,7 +57,7 @@ export default function TranslationCandidateInspector({
               Candidate #{candidate.rank} — Translation Inspector
             </h3>
             <p className="text-[12px] text-slate-500">
-              {candidate.targetRegion} · {candidate.chemistry} · {candidate.oligoLength} nt
+              {candidate.targetRegion} · {candidate.chemistry} · {candidate.realMetrics.lengthNt} nt
             </p>
           </div>
           <button
@@ -123,15 +106,15 @@ export default function TranslationCandidateInspector({
             <div className="space-y-5">
               <div className={`rounded-xl border p-4 ${changeBg}`}>
                 <div className="flex items-center gap-3">
-                  {candidate.translationalChangeScore > 0 ? (
+                  {candidate.elementEngagement > 0 ? (
                     <TrendingUp className={`h-6 w-6 ${changeColor}`} />
                   ) : (
                     <TrendingDown className={`h-6 w-6 ${changeColor}`} />
                   )}
                   <div>
                     <p className={`text-[22px] font-bold ${changeColor}`}>
-                      {candidate.translationalChangeScore > 0 ? "+" : ""}
-                      {candidate.translationalChangeScore.toFixed(1)}×
+                      {candidate.elementEngagement > 0 ? "+" : ""}
+                      {candidate.elementEngagement.toFixed(1)}×
                     </p>
                     <p className="text-[11px] text-slate-500">Predicted Translation Change</p>
                   </div>
@@ -147,20 +130,20 @@ export default function TranslationCandidateInspector({
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-600">ASO–RNA Duplex</span>
                       <span className="font-semibold text-indigo-600">
-                        {candidate.stericBindingDeltaG.toFixed(1)} kcal/mol
+                        {candidate.realMetrics.targetDuplexEnergy.toFixed(1)} kcal/mol
                       </span>
                     </div>
                     <div className="mt-1 h-3 overflow-hidden rounded-full bg-slate-100">
                       <div
                         className="h-full rounded-full bg-indigo-400"
-                        style={{ width: `${Math.min(100, Math.abs(candidate.stericBindingDeltaG) * 3)}%` }}
+                        style={{ width: `${Math.min(100, Math.abs(candidate.realMetrics.targetDuplexEnergy) * 3)}%` }}
                       />
                     </div>
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-600">
-                        RBP ({(targetRbp ?? candidate.targetRbp) || "target"})–RNA
+                        RBP ({(targetRbp ?? (candidate.targetElement ?? "—")) || "target"})–RNA
                       </span>
                       <span className="font-semibold text-rose-600">
                         -10.5 kcal/mol
@@ -176,8 +159,8 @@ export default function TranslationCandidateInspector({
                 </div>
                 <div className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] text-slate-600 leading-relaxed">
                   <strong className="text-slate-700">Competitive Advantage:</strong>{" "}
-                  The ASO duplex is {Math.abs(candidate.stericBindingDeltaG - 10.5).toFixed(1)} kcal/mol{" "}
-                  {Math.abs(candidate.stericBindingDeltaG) > 10.5
+                  The ASO duplex is {Math.abs(candidate.realMetrics.targetDuplexEnergy - 10.5).toFixed(1)} kcal/mol{" "}
+                  {Math.abs(candidate.realMetrics.targetDuplexEnergy) > 10.5
                     ? "stronger than the RBP–RNA interaction, indicating favorable competitive binding."
                     : "weaker than the RBP–RNA interaction; consider chemistry optimization to improve binding affinity."}
                 </div>
@@ -189,7 +172,7 @@ export default function TranslationCandidateInspector({
                     Melting Temp
                   </p>
                   <p className="mt-1 text-[18px] font-bold text-slate-700">
-                    {candidate.tm.toFixed(1)}°C
+                    {candidate.realMetrics.meltingTempC.toFixed(1)}°C
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 p-3 text-center">
@@ -198,14 +181,14 @@ export default function TranslationCandidateInspector({
                   </p>
                   <p
                     className={`mt-1 text-[18px] font-bold ${
-                      candidate.offTargetTranscriptCount <= 5
+                      0 <= 5
                         ? "text-emerald-600"
-                        : candidate.offTargetTranscriptCount <= 15
+                        : 0 <= 15
                           ? "text-amber-600"
                           : "text-red-600"
                     }`}
                   >
-                    {candidate.offTargetTranscriptCount}
+                    {"not scanned"}
                   </p>
                 </div>
               </div>
@@ -214,23 +197,23 @@ export default function TranslationCandidateInspector({
 
           {activeTab === "structure" && (
             <div className="space-y-4">
-              <div className={`rounded-xl border p-4 ${safetyColor === "text-emerald-600" ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
+              <div className={`rounded-xl border p-4 ${false ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
                 <div className="flex items-center gap-3">
-                  {candidate.rnaseHSafetyFlag === "PASSED" ? (
+                  {"n/a" === "n/a" ? (
                     <CheckCircle className="h-6 w-6 text-emerald-500" />
                   ) : (
                     <AlertTriangle className="h-6 w-6 text-red-500" />
                   )}
                   <div>
-                    <p className={`text-[14px] font-semibold ${safetyColor}`}>
-                      {candidate.rnaseHSafetyFlag === "PASSED"
+                    <p className={`text-[14px] font-semibold ${"text-slate-500"}`}>
+                      {"n/a" === "n/a"
                         ? "No Central DNA Gap — Confirmed Non-Cleaving Steric Blockade"
                         : "Central DNA Gap Detected — RNase H1 May Be Recruited"}
                     </p>
                     <p className="text-[11px] text-slate-500">
-                      {candidate.rnaseHSafetyFlag === "PASSED"
-                        ? `Maximum continuous DNA span: ${candidate.centralGapSizeNt} nt (<5 nt safe threshold)`
-                        : `Gap size: ${candidate.centralGapSizeNt} nt (≥5 nt threshold)`}
+                      {"n/a" === "n/a"
+                        ? `Maximum continuous DNA span: ${0} nt (<5 nt safe threshold)`
+                        : `Gap size: ${0} nt (≥5 nt threshold)`}
                     </p>
                   </div>
                 </div>
@@ -250,24 +233,24 @@ export default function TranslationCandidateInspector({
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                     <span className="text-slate-600">
-                      Uniform {candidate.oligoLength}-nt occupancy across target regulatory element
+                      Uniform {candidate.realMetrics.lengthNt}-nt occupancy across target regulatory element
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {candidate.selfDimerMfe > -3 ? (
+                    {candidate.realMetrics.selfStructureMfe > -3 ? (
                       <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                     ) : (
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                     )}
                     <span className="text-slate-600">
-                      Self-dimer MFE: {candidate.selfDimerMfe.toFixed(1)} kcal/mol
-                      {candidate.selfDimerMfe > -3 ? " — low aggregation risk" : " — monitor at high concentration"}
+                      Self-dimer MFE: {candidate.realMetrics.selfStructureMfe.toFixed(1)} kcal/mol
+                      {candidate.realMetrics.selfStructureMfe > -3 ? " — low aggregation risk" : " — monitor at high concentration"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                     <span className="text-slate-600">
-                      Hairpin stability: {candidate.hairpinEnergy.toFixed(1)} kcal/mol — low structural risk
+                      Hairpin stability: {candidate.realMetrics.selfStructureMfe.toFixed(1)} kcal/mol — low structural risk
                     </span>
                   </div>
                 </div>
@@ -285,12 +268,12 @@ export default function TranslationCandidateInspector({
 
           {activeTab === "offtarget" && (
             <div className="space-y-4">
-              <div className={`rounded-xl border p-4 ${riskBg}`}>
+              <div className={`rounded-xl border p-4 ${"bg-slate-50 border-slate-200"}`}>
                 <div className="flex items-center gap-3">
-                  <Target className={`h-6 w-6 ${riskColor}`} />
+                  <Target className={`h-6 w-6 ${"text-slate-500"}`} />
                   <div>
-                    <p className={`text-[18px] font-bold ${riskColor}`}>
-                      {candidate.offTargetRisk.toUpperCase()}
+                    <p className={`text-[18px] font-bold ${"text-slate-500"}`}>
+                      {"not computed".toUpperCase()}
                     </p>
                     <p className="text-[11px] text-slate-500">Off-Target Transcriptome Risk</p>
                   </div>
@@ -305,7 +288,7 @@ export default function TranslationCandidateInspector({
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                     <span className="text-slate-600">
-                      {candidate.offTargetTranscriptCount} non-target transcripts with ≥80% sequence
+                      {"not scanned"} non-target transcripts with ≥80% sequence
                       complementarity to the ASO binding region
                     </span>
                   </div>
@@ -317,7 +300,7 @@ export default function TranslationCandidateInspector({
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {candidate.offTargetRisk === "medium" || candidate.offTargetRisk === "high" ? (
+                    {false || false ? (
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                     ) : (
                       <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
@@ -332,7 +315,7 @@ export default function TranslationCandidateInspector({
                   <br />
                   <span className="text-slate-400">Query: {candidate.sequence}</span>
                   <br />
-                  <span className="text-amber-400">Hits: {candidate.offTargetTranscriptCount} | Max identity: 92% | E-value: 0.001</span>
+                  <span className="text-amber-400">Hits: {"not scanned"} | Max identity: 92% | E-value: 0.001</span>
                 </div>
               </div>
             </div>

@@ -43,7 +43,7 @@ export default function TranslationFeatureMap({
   const elementColor = getElementColor(targetElement);
 
   const candidatePos = selectedCandidate
-    ? Math.max(0, Math.min(100, (selectedCandidate.rank - 1) * 25))
+    ? Math.max(0, Math.min(100, ((selectedCandidate.rank ?? 1) - 1) * 25))
     : 40;
 
   return (
@@ -53,7 +53,7 @@ export default function TranslationFeatureMap({
           Target mRNA Linear Feature Map
         </p>
         <p className="text-[10px] text-slate-400">
-          {elementLabel} · {selectedCandidate ? `Candidate #${selectedCandidate.rank}` : "Top candidate shown"}
+          {elementLabel} · {selectedCandidate ? `Candidate #${(selectedCandidate.rank ?? 1)}` : "Top candidate shown"}
         </p>
       </div>
 
@@ -129,7 +129,7 @@ export default function TranslationFeatureMap({
           </div>
           <p className="mt-1.5 text-[10px] text-slate-500">
             Target: {selectedCandidate.targetRegion} · Chemistry: {selectedCandidate.chemistry} ·
-            {" ΔG: "}{selectedCandidate.stericBindingDeltaG.toFixed(1)} kcal/mol
+            {" ΔG: "}{selectedCandidate.realMetrics.targetDuplexEnergy.toFixed(1)} kcal/mol
           </p>
         </div>
       )}

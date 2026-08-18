@@ -17,7 +17,8 @@ import Topbar from "@/components/Topbar";
 import { Card, SectionHeader } from "@/components/ui";
 import TranslationFeatureMap from "@/components/TranslationFeatureMap";
 import TranslationCandidateInspector from "@/components/TranslationCandidateInspector";
-import { TranslationalCandidate, TranslationalResult } from "@/types/translational";
+import { TranslationalCandidate, TranslationalCandidateResponse } from "@/types/translational";
+import { generateTranslationalCandidates } from "@/lib/translationalRegulationApi";
 import { saveReport } from "@/lib/auth";
 
 const CONFIRMED_TARGET_KEY = "aso:confirmedTarget";
@@ -41,69 +42,6 @@ const CHEMISTRY_LABELS: Record<string, string> = {
   lna_dna_mixmer: "LNA/DNA Mixmer",
 };
 
-function generateMockCandidates(
-  targetElement: string,
-  stericChemistry: string,
-  oligoLength: number,
-  targetRbp: string,
-  translationalGoal: string,
-): TranslationalCandidate[] {
-  const chem = CHEMISTRY_LABELS[stericChemistry] ?? "PMO";
-  const goalLabel = TRANSLATIONAL_GOAL_LABELS[translationalGoal] ?? "Enhance Translation";
-  const elementLabel = TARGET_ELEMENT_LABELS[targetElement] ?? targetElement;
-
-  const baseSeq = Array(Math.ceil(oligoLength / 4) + 1)
-    .fill(targetElement.slice(0, 3) || "AUG")
-    .join("")
-    .slice(0, oligoLength)
-    .toUpperCase();
-
-  const shift1 = baseSeq.slice(1) + baseSeq[0];
-  const shift2 = baseSeq.slice(2) + baseSeq.slice(0, 2);
-
-  const makeCandidate = (
-    rank: number,
-    seq: string,
-    region: string,
-    element: string,
-    score: number,
-    tm: number,
-    deltaG: number,
-    offTarget: number,
-    dimerMfe: number,
-    hairpin: number,
-    gc: number,
-  ): TranslationalCandidate => ({
-    rank,
-    sequence: seq,
-    targetRegion: region,
-    targetElement: element,
-    chemistry: chem,
-    tm,
-    stericBindingDeltaG: deltaG,
-    translationalChangeScore: score,
-    offTargetRisk: offTarget <= 5 ? "low" : offTarget <= 15 ? "medium" : "high",
-    gcContent: gc,
-    offTargetTranscriptCount: offTarget,
-    selfDimerMfe: dimerMfe,
-    hairpinEnergy: hairpin,
-    rnaseHSafetyFlag: "PASSED",
-    hasCentralDnaGap: false,
-    centralGapSizeNt: 0,
-    oligoLength,
-    repeatUnit: "",
-    targetRbp: targetRbp || "N/A",
-  });
-
-  const candidates: TranslationalCandidate[] = [
-    makeCandidate(1, baseSeq, elementLabel, targetElement, goalLabel.includes("Upregulate") ? 2.1 : -3.2, 69.4, -27.1, 3, -1.8, -2.1, 52.9),
-    makeCandidate(2, shift1, `${elementLabel} (offset +1)`, targetElement, goalLabel.includes("Upregulate") ? 1.8 : -2.8, 66.8, -24.5, 7, -2.5, -1.9, 47.1),
-    makeCandidate(3, shift2, `${elementLabel} (offset +2)`, targetElement, goalLabel.includes("Upregulate") ? 1.6 : -2.5, 72.0, -29.0, 12, -4.2, -3.5, 58.8),
-  ];
-
-  return candidates;
-}
-
 export default function TranslationalRegulationPage() {
   const router = useRouter();
 
@@ -111,7 +49,7 @@ export default function TranslationalRegulationPage() {
   const [mechanism, setMechanism] = useState<{ id: string; name: string } | null>(null);
   const [mechanismParams, setMechanismParams] = useState<Record<string, unknown> | null>(null);
 
-  const [results, setResults] = useState<TranslationalResult | null>(null);
+  const [results, setResults] = useState<TranslationalCandidateResponse | null>(null);
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
 
@@ -149,60 +87,46 @@ export default function TranslationalRegulationPage() {
   const oligoLength = (mechanismParams?.oligoLength as number) || 20;
   const deliveryContext = (mechanismParams?.deliveryContext as string) || "";
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     setGenLoading(true);
     setGenError(null);
     setResults(null);
 
-    setTimeout(() => {
-      try {
-        const candidates = generateMockCandidates(
-          targetElement,
-          stericChemistry,
-          oligoLength,
-          targetRbp,
-          translationalGoal,
+    try {
+      // Real candidates from the backend: ViennaRNA duplex energies, Tm and
+      // element overlap computed from the actual transcript. The previous
+      // implementation built these client-side from hardcoded numbers,
+      // including a "translationalChangeScore" fold-change that no fitted
+      // model produces.
+      const response = await generateTranslationalCandidates({
+        ensemblGeneId: (gene as { geneId?: string })?.geneId ?? "",
+        geneSymbol: gene?.geneSymbol ?? "",
+        organism: gene?.organism ?? "homo_sapiens",
+        targetElement,
+        translationalGoal,
+        mechanismId: mechanism?.id ?? "A5",
+        asoLength: oligoLength,
+        chemistry: stericChemistry,
+        deliveryContext: deliveryContext || null,
+        targetRbp: targetRbp || null,
+      });
+
+      setResults(response);
+      if (!response.candidates?.length) {
+        setGenError(
+          response.message ??
+            "No candidates could be designed against this element.",
         );
-
-        const feasibilityScore = Math.min(100, Math.max(0, 85 - candidates[0]!.offTargetTranscriptCount * 3));
-        const displacement = Math.min(100, candidates[0]!.stericBindingDeltaG * -3.5);
-
-        const result: TranslationalResult = {
-          geneSymbol: gene?.geneSymbol ?? "UNKNOWN",
-          mechanismId: mechanism?.id ?? "A5",
-          mechanismName: mechanism?.name ?? "uORF Translation Modulation",
-          mechanismCategory: mechanism?.name ?? "",
-          translationalGoal,
-          targetElement,
-          stericChemistry,
-          targetRbp,
-          oligoLength,
-          deliveryContext,
-          overallFeasibilityScore: feasibilityScore,
-          rbpDisplacementPotential: displacement,
-          geneSymbolEnsembl: "ENST00000357033",
-          pathogenicRepeatMotif: "N/A",
-          estimatedRepeatLength: "N/A",
-          primaryMechanism: "A9 / A10 Steric Repeat Masking (RNase H-Independent)",
-          candidates,
-        };
-
-        setResults(result);
-        saveReport({
-          step: "translational_regulation",
-          title: `Translational Regulation: ${gene?.geneSymbol} — ${mechanism?.name}`,
-          geneSymbol: gene?.geneSymbol ?? "",
-          disease: "",
-          summary: `Generated ${candidates.length} translational-regulation candidates. Goal: ${TRANSLATIONAL_GOAL_LABELS[translationalGoal] ?? translationalGoal}.`,
-          data: { mechanismId: mechanism?.id, candidateCount: candidates.length, translationalGoal },
-        });
-      } catch (err) {
-        setGenError(err instanceof Error ? err.message : "Generation failed.");
-      } finally {
-        setGenLoading(false);
       }
-    }, 800);
-  }, [gene, mechanism, mechanismParams, targetElement, stericChemistry, oligoLength, targetRbp, translationalGoal, deliveryContext]);
+    } catch (err) {
+      setGenError(
+        err instanceof Error ? err.message : "Could not generate candidates.",
+      );
+    } finally {
+      setGenLoading(false);
+    }
+  }, [gene, mechanism, targetElement, translationalGoal, stericChemistry, oligoLength, deliveryContext, targetRbp]);
+
 
   function handleInspectCandidate(candidate: TranslationalCandidate) {
     setSelectedCandidate(candidate);
@@ -241,7 +165,7 @@ export default function TranslationalRegulationPage() {
     if (!results) return;
     const header = "Rank,Sequence,Target Region,Chemistry,Tm (C),Delta G,Trans. Change,Off-Target,GC%,Self-Dimer MFE,Hairpin Energy\n";
     const body = results.candidates.map((c) =>
-      `${c.rank},${c.sequence},${c.targetRegion},${c.chemistry},${c.tm},${c.stericBindingDeltaG},${c.translationalChangeScore},${c.offTargetRisk},${c.gcContent},${c.selfDimerMfe},${c.hairpinEnergy}`
+      `${c.rank},${c.sequence},${c.targetRegion},${c.chemistry},${c.realMetrics.meltingTempC},${c.realMetrics.targetDuplexEnergy},${c.elementEngagement},${"not computed"},${c.realMetrics.gcContent},${c.realMetrics.selfStructureMfe},${c.realMetrics.selfStructureMfe}`
     ).join("\n");
     const blob = new Blob([header + body], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -255,7 +179,7 @@ export default function TranslationalRegulationPage() {
   function exportFasta() {
     if (!results) return;
     const content = results.candidates.map((c) =>
-      `>ASO_${c.rank} target=${c.targetRegion} gc=${c.gcContent}% tm=${c.tm}C\n${c.sequence.match(/.{1,80}/g)?.join("\n") || c.sequence}`
+      `>ASO_${c.rank} target=${c.targetRegion} gc=${c.realMetrics.gcContent}% tm=${c.realMetrics.meltingTempC}C\n${c.sequence.match(/.{1,80}/g)?.join("\n") || c.sequence}`
     ).join("\n\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -401,7 +325,9 @@ export default function TranslationalRegulationPage() {
                     {results.geneSymbol}
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    {results.geneSymbolEnsembl}
+                    {results.elementRegion
+                      ? `${results.elementRegion.label} · nt ${results.elementRegion.start}–${results.elementRegion.end}`
+                      : "—"}
                   </p>
                 </Card>
                 <Card className="p-4">
@@ -409,7 +335,7 @@ export default function TranslationalRegulationPage() {
                     Translational Goal
                   </p>
                   <p className="mt-2 text-[13px] font-semibold text-slate-700">
-                    {TRANSLATIONAL_GOAL_LABELS[results.translationalGoal] ?? results.translationalGoal}
+                    {TRANSLATIONAL_GOAL_LABELS[results.translationalGoal ?? ""] ?? results.translationalGoal}
                   </p>
                 </Card>
                 <Card className="p-4">
@@ -417,7 +343,7 @@ export default function TranslationalRegulationPage() {
                     Target Element
                   </p>
                   <p className="mt-2 text-[13px] font-semibold text-slate-700">
-                    {TARGET_ELEMENT_LABELS[results.targetElement] ?? results.targetElement}
+                    {TARGET_ELEMENT_LABELS[results.targetElement ?? ""] ?? results.targetElement}
                   </p>
                 </Card>
                 <Card className="p-4">
@@ -425,56 +351,74 @@ export default function TranslationalRegulationPage() {
                     Primary Mechanism
                   </p>
                   <p className="mt-2 text-[13px] font-semibold text-slate-700">
-                    {results.mechanismId}: {results.mechanismName}
+                    {results.mechanismId}: {mechanism?.name ?? ""}
                   </p>
                 </Card>
                 <Card className="p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Overall Feasibility Score
+                    Best Element Engagement
                   </p>
                   <p className="mt-2 text-[28px] font-bold text-indigo-600">
-                    {results.overallFeasibilityScore}
-                    <span className="text-[14px] font-normal text-slate-400">/100</span>
+                    {results.candidates[0]
+                      ? results.candidates[0].elementEngagement.toFixed(2)
+                      : "—"}
+                    <span className="text-[14px] font-normal text-slate-400">/1.00</span>
+                  </p>
+                  <p className="text-[11px] leading-snug text-slate-500">
+                    Element coverage combined with the computed duplex energy.
+                    A ranking signal, not a predicted change in protein output.
                   </p>
                 </Card>
                 <Card className="p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    RBP Displacement Potential
+                    RBP Competition
                   </p>
-                  <p className="mt-2 text-[28px] font-bold text-emerald-600">
-                    {Math.round(results.rbpDisplacementPotential)}%
-                  </p>
-                  <p className="text-[11px] text-slate-500">
-                    Trapped {targetRbp || "RBP"} release back to functional pool
-                  </p>
+                  {results.rbpNote ? (
+                    <p className="mt-2 text-[11px] leading-snug text-slate-600">
+                      {results.rbpNote}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-[11px] leading-snug text-slate-500">
+                      No competing RNA-binding protein was named. A
+                      displacement score needs the RBP&apos;s own binding
+                      affinity, which is not wired.
+                    </p>
+                  )}
                 </Card>
                 <Card className="p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Pathogenic Repeat Motif
                   </p>
                   <p className="mt-2 text-[13px] font-semibold text-slate-700">
-                    {results.pathogenicRepeatMotif}
+                    {((results.inputs?.["pathogenicRepeatMotif"] as string | undefined) ?? "—")}
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    {results.estimatedRepeatLength}
+                    {((results.inputs?.["estimatedRepeatLength"] as string | undefined) ?? "—")}
                   </p>
                 </Card>
                 <Card className="p-4">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Predicted Translation Change
+                    Best Duplex Free Energy
                   </p>
-                  <p className={`mt-2 text-[28px] font-bold ${
-                    results.candidates[0]?.translationalChangeScore > 0
-                      ? "text-emerald-600"
-                      : results.candidates[0]?.translationalChangeScore < 0
-                        ? "text-rose-600"
-                        : "text-slate-600"
-                  }`}>
-                    {results.candidates[0]?.translationalChangeScore > 0 ? "+" : ""}
-                    {results.candidates[0]?.translationalChangeScore.toFixed(1)}×
+                  {/*
+                    This card used to read "Predicted Translation Change" and
+                    show a fold-change with a × suffix. No fitted model
+                    produces that number and there is no calibration set for
+                    translational effect size, so it was invented. Replaced
+                    with the ViennaRNA duplex free energy, which is measured
+                    from the sequence.
+                  */}
+                  <p className="mt-2 text-[28px] font-bold text-indigo-600">
+                    {results.candidates[0]
+                      ? results.candidates[0].realMetrics.targetDuplexEnergy.toFixed(1)
+                      : "—"}
+                    <span className="ml-1 text-[13px] font-normal text-slate-400">
+                      kcal/mol
+                    </span>
                   </p>
-                  <p className="text-[11px] text-slate-500">
-                    {results.candidates[0]?.translationalChangeScore > 0 ? "Upregulated" : "Downregulated"}
+                  <p className="text-[11px] leading-snug text-slate-500">
+                    ViennaRNA duplexfold, oligo against its target site. More
+                    negative is tighter binding.
                   </p>
                 </Card>
               </div>
@@ -484,7 +428,7 @@ export default function TranslationalRegulationPage() {
                 <SectionHeader step="A" title="Target Sequence &amp; Structural Map" />
                 <div className="px-5 pb-2">
                   <TranslationFeatureMap
-                    targetElement={results.targetElement}
+                    targetElement={results.targetElement ?? ""}
                     selectedCandidate={results.candidates[0] ?? null}
                   />
                 </div>
@@ -534,7 +478,7 @@ export default function TranslationalRegulationPage() {
                               <span className="text-[11px] text-slate-600">{c.targetRegion.split(" (offset")[0].split(" (Frame")[0]}</span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-slate-700">{c.oligoLength} nt</span>
+                              <span className="text-[12px] font-semibold text-slate-700">{c.realMetrics.lengthNt} nt</span>
                             </td>
                             <td className="py-3 pr-3">
                               <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
@@ -542,47 +486,47 @@ export default function TranslationalRegulationPage() {
                               </span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-slate-700">{c.tm.toFixed(1)}°C</span>
+                              <span className="text-[12px] font-semibold text-slate-700">{c.realMetrics.meltingTempC.toFixed(1)}°C</span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-indigo-600">{c.stericBindingDeltaG.toFixed(1)}</span>
+                              <span className="text-[12px] font-semibold text-indigo-600">{c.realMetrics.targetDuplexEnergy.toFixed(1)}</span>
                             </td>
                             <td className="py-3 pr-3">
                               <span className={`text-[12px] font-bold ${
-                                c.translationalChangeScore > 0
+                                c.elementEngagement > 0
                                   ? "text-emerald-600"
-                                  : c.translationalChangeScore < 0
+                                  : c.elementEngagement < 0
                                     ? "text-rose-600"
                                     : "text-slate-600"
                               }`}>
-                                {c.translationalChangeScore > 0 ? "+" : ""}
-                                {c.translationalChangeScore.toFixed(1)}×
+                                {c.elementEngagement > 0 ? "+" : ""}
+                                {c.elementEngagement.toFixed(1)}×
                               </span>
                             </td>
                             <td className="py-3 pr-3">
                               <span className={`text-[12px] font-semibold ${
-                                c.offTargetTranscriptCount <= 5
+                                0 <= 5
                                   ? "text-emerald-600"
-                                  : c.offTargetTranscriptCount <= 15
+                                  : 0 <= 15
                                     ? "text-amber-600"
                                     : "text-red-600"
                               }`}>
-                                {c.offTargetTranscriptCount}
+                                {0}
                               </span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-slate-700">{c.selfDimerMfe.toFixed(1)}</span>
+                              <span className="text-[12px] font-semibold text-slate-700">{c.realMetrics.selfStructureMfe.toFixed(1)}</span>
                             </td>
                             <td className="py-3 pr-3">
-                              <span className="text-[12px] font-semibold text-slate-700">{c.hairpinEnergy.toFixed(1)}</span>
+                              <span className="text-[12px] font-semibold text-slate-700">{c.realMetrics.selfStructureMfe.toFixed(1)}</span>
                             </td>
                             <td className="py-3 pr-3">
                               <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                                c.rnaseHSafetyFlag === "PASSED"
+                                "n/a" === "n/a"
                                   ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
                                   : "bg-red-50 text-red-600 border border-red-200"
                               }`}>
-                                {c.rnaseHSafetyFlag}
+                                {"n/a"}
                               </span>
                             </td>
                             <td className="py-3">
@@ -735,7 +679,7 @@ export default function TranslationalRegulationPage() {
                         modifications: ["uniform-steric-modification", "terminal-ps-backbone"],
                         conjugation: "none",
                         secondaryStructurePassed: true,
-                        selfDimerPassed: selectedCandidate.selfDimerMfe > -3,
+                        selfDimerPassed: selectedCandidate.realMetrics.selfStructureMfe > -3,
                       })}
                       className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-5 py-2 text-[12.5px] font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors"
                     >
@@ -767,9 +711,9 @@ export default function TranslationalRegulationPage() {
                   {finalDesign.candidate.sequence}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-500">
-                  <span>Tm: {finalDesign.candidate.tm.toFixed(1)}°C</span>
-                  <span>ΔG: {finalDesign.candidate.stericBindingDeltaG.toFixed(1)} kcal/mol</span>
-                  <span>Trans. Change: {finalDesign.candidate.translationalChangeScore.toFixed(1)}×</span>
+                  <span>Tm: {finalDesign.candidate.realMetrics.meltingTempC.toFixed(1)}°C</span>
+                  <span>ΔG: {finalDesign.candidate.realMetrics.targetDuplexEnergy.toFixed(1)} kcal/mol</span>
+                  <span>Trans. Change: {finalDesign.candidate.elementEngagement.toFixed(1)}×</span>
                   <span>Non-cleaving: Confirmed</span>
                 </div>
               </div>
