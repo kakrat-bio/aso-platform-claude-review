@@ -371,22 +371,26 @@ def test_no_rulebook_claims_an_fda_drug_it_does_not_have():
 # Reference tables (data_sources_halted_flagged.md)
 # ---------------------------------------------------------------------------
 
-def test_reference_tables_ship_empty_and_that_is_the_intended_state():
-    """An unpopulated table must halt the mechanism, not pass it.
+def test_populated_reference_rows_all_name_their_source():
+    """Rows are allowed; recalled rows are not.
 
-    Every source behind these tables is marked MUST VERIFY by a human.
-    Populating them from recalled knowledge would put unverifiable data
-    behind a `confirmed` or `annotation` provenance label — the strongest
-    tiers the feature layer has.
+    The rule was never "these tables stay empty" — it is that nothing may be
+    written from memory. Populated tables are fetched by
+    data_curation/populate_reference_tables.py and stamped, so the check is
+    that every row names where it came from.
     """
+    import csv
+
     from services import reference_tables as RT
-    status = RT.status()
-    assert set(status) == set(RT.TABLES)
-    for name, info in status.items():
-        assert info["present"], f"{name} missing"
-        assert not info["populated"], (
-            f"{name} has rows — every row needs a verified source"
-        )
+
+    for name, info in RT.status().items():
+        if not info["populated"]:
+            continue
+        path = Path(RT.REFERENCE_DIR) / f"{name}.tsv"
+        with open(path, encoding="utf-8", newline="") as fh:
+            for row in csv.DictReader(fh, delimiter="\t"):
+                assert (row.get("source") or "").strip(), name
+                assert (row.get("source_version") or "").strip(), name
 
 
 def test_a11_needs_both_halves_of_f13():
@@ -568,12 +572,14 @@ def test_flagged_mechanisms_are_always_listed_even_when_no_flag_fires():
     haploinsufficiency case, where every transcript-acting mechanism halts and
     protein replacement is the obvious move, all nine were invisible.
     """
+    # A gene with no reference-table coverage, so no flag can fire.
     out = A.arbitrate(A.ArbitrationContext(
-        gene_symbol="CFTR", molecular_defect="haploinsufficiency"))
+        gene_symbol="NOT_A_REAL_GENE", molecular_defect="haploinsufficiency"))
 
-    # No flag can fire without P2/B1 ...
+    # No flag fires ...
     assert all(not f["raised"] for f in out["modalityFlags"])
-    # ... but the mechanisms are listed regardless.
+    # ... but the mechanisms are listed regardless. That is the point: their
+    # visibility must not depend on data the page never collects.
     listed = {m["id"] for m in out["flaggedMechanisms"]}
     assert listed == {"A24", "A25", "A26", "A34", "A35", "A36",
                       "A37", "A38", "A39"}

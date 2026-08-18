@@ -1,1 +1,24 @@
-gene_symbol	uniprot_id	has_signal_peptide	localisation_class	source	source_version
+gene_symbol	uniprot_id	has_signal_peptide	localisation_class	evidence	source	source_version
+TTR	P02766	true	secreted	secreted=1 surface=0 intracellular=1 tm_segments=0 +signal_peptide	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+SOD1	P00441	false	intracellular	secreted=0 surface=0 intracellular=2 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+APOB	P04114	true	secreted	secreted=1 surface=0 intracellular=1 tm_segments=0 +signal_peptide	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+DMD	P11532	false	membrane	secreted=0 surface=2 intracellular=1 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+MFSD8	Q8NHS3	false	intracellular	secreted=0 surface=0 intracellular=2 tm_segments=12	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+ALAS1	P13196	false	intracellular	secreted=0 surface=0 intracellular=1 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+HAO1	Q9UJM8	false	intracellular	secreted=0 surface=0 intracellular=1 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+PCSK9	Q8NBP7	true	secreted	secreted=1 surface=1 intracellular=5 tm_segments=0 +signal_peptide	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+DMPK	Q09013	false	membrane	secreted=0 surface=1 intracellular=6 tm_segments=1 +transmembrane	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+HTT	P42858	false	intracellular	secreted=0 surface=0 intracellular=4 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+CNBP	P62633	false	intracellular	secreted=0 surface=0 intracellular=9 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+FMR1	Q06787	false	intracellular	secreted=0 surface=3 intracellular=17 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+FXN	Q16595	false	intracellular	secreted=0 surface=0 intracellular=2 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+C9ORF72	Q96LT7	false	intracellular	secreted=1 surface=0 intracellular=12 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+ATXN1	P54253	false	intracellular	secreted=0 surface=0 intracellular=2 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+ATXN2	Q99700	false	intracellular	secreted=0 surface=0 intracellular=1 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+SCN1A	P35498	false	membrane	secreted=0 surface=1 intracellular=0 tm_segments=24 +transmembrane	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+MAPT	P10636	false	intracellular	secreted=1 surface=1 intracellular=2 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+GRN	P28799	true	secreted	secreted=1 surface=0 intracellular=1 tm_segments=0 +signal_peptide	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+STMN2	Q93045	false	intracellular	secreted=0 surface=0 intracellular=4 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+FN1	P02751	true	secreted	secreted=2 surface=0 intracellular=0 tm_segments=0 +signal_peptide	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+VEGFA	P15692	false	secreted	secreted=5 surface=0 intracellular=4 tm_segments=0	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18
+CFTR	P13569	false	membrane	secreted=0 surface=2 intracellular=4 tm_segments=12 +transmembrane	UniProt REST (reviewed, organism 9606)	retrieved 2026-08-18

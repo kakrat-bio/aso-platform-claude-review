@@ -3,7 +3,38 @@
 Static, versioned lookup tables for the features that cannot be computed from
 sequence. Specified in `docs/planning/data_sources_halted_flagged.md`.
 
-**None of these tables is populated.** Each ships with its header row only.
+**Two tables are populated; the rest ship header-only.** Populated rows are
+FETCHED at run time by
+`backend/data_curation/populate_reference_tables.py`, never typed in, and
+every row carries `source` and `source_version`. Re-run that script to
+refresh them.
+
+| table | rows | source |
+|---|---|---|
+| `protein_localisation.tsv` | 23 | UniProt REST (reviewed, organism 9606) |
+| `clingen_dosage.tsv` | 10 | ClinGen Dosage Sensitivity (GRCh38 gene curation list) |
+
+Two guards in that script are worth knowing about, because both caught a
+wrong row before it was written:
+
+- **Gene-symbol collisions.** UniProt ranks by relevance, not symbol
+  identity, and `gene_exact:HTT` returns SLC6A4 — the serotonin
+  transporter, historically also called "HTT" — *above* huntingtin. Taking
+  the top hit wrote a 12-transmembrane surface protein into huntingtin's
+  row, which would then have fired the aptamer flag for a cytoplasmic
+  scaffold. The script now requires the entry's own primary gene symbol to
+  match, and skips the gene rather than guess. SMN2 is skipped for the same
+  reason: it has no distinct reviewed entry.
+- **Localisation is weighed, not first-match.** UniProt lists every
+  compartment a protein has been seen in, so "any secreted annotation wins"
+  called C9orf72 secreted off one entry among eighteen, and "any membrane
+  wins" called FMR1 a surface target off two synaptic annotations among
+  twenty-seven. Classification now uses the dominant class plus the signal
+  peptide and transmembrane-segment counts, with ties falling to
+  intracellular. Each row records the counts in `evidence` so the call is
+  auditable.
+
+The remaining tables are empty for the reasons below.
 The feature layer treats a header-only table exactly as it treats a missing
 one: the feature stays UNRESOLVED and the mechanism it serves halts, or the
 modality flag it drives is withheld. That is the intended state until a human

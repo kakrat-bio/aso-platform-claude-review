@@ -103,15 +103,17 @@ def status() -> dict[str, dict]:
     out: dict[str, dict] = {}
     for name in TABLES:
         path = os.path.join(REFERENCE_DIR, f"{name}.tsv")
-        rows = rows_for(name, None)  # warms the cache without matching
+        # rows_for() returns early on a falsy key, so it never warmed the
+        # cache and every table read as unpopulated even when it had rows.
         with _lock:
+            if name not in _cache:
+                _cache[name] = _load(name)
             index = _cache.get(name, {})
         out[name] = {
             "present": os.path.exists(path),
             "genes": len(index),
             "populated": bool(index),
         }
-        del rows
     return out
 
 
