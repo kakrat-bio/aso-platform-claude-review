@@ -71,6 +71,7 @@
     ],
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
-    "designAvailable": true
+    "designAvailable": false,
+    "designUnavailableReason": "Alternative promoter switching acts on the promoter region, which is not present in the mature transcript this designer tiles. Designing it needs the genomic promoter sequence and the transcription-start-site annotation for each alternative promoter, neither of which is wired here. The mechanism still competes for ranking; only the design step is unavailable."
   }
 }

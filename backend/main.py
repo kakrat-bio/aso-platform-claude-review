@@ -32,7 +32,7 @@ try:  # ``uvicorn backend.main:app`` from the repository root
     from .services.fda_therapies_service import get_fda_therapies
     from .services.orphanet_service import get_orphanet_data
     from .services.mutation_breakdown_service import get_mutation_breakdown
-    from .services.admet_service import get_admet_prediction
+    from .services.sequence_liability_service import get_sequence_liabilities
     from .api.mechanisms import router as mechanisms_router
     from .api.gene_silencing import router as gene_silencing_router
     from .api.gene_upregulation import router as gene_upregulation_router
@@ -67,7 +67,7 @@ except ImportError:
     from services.fda_therapies_service import get_fda_therapies
     from services.orphanet_service import get_orphanet_data
     from services.mutation_breakdown_service import get_mutation_breakdown
-    from services.admet_service import get_admet_prediction
+    from services.sequence_liability_service import get_sequence_liabilities
     from api.mechanisms import router as mechanisms_router
     from api.gene_silencing import router as gene_silencing_router
     from api.gene_upregulation import router as gene_upregulation_router
@@ -592,15 +592,23 @@ async def initialize_target(payload: TargetRequest):
             _run_sync(lambda: get_mutation_breakdown(official_symbol) if is_human else {}, "Mutation breakdown lookup", {}, timeout_seconds=60.0),
         )
 
-        admet_data = await _run_sync(lambda: get_admet_prediction(
-            aso_sequence=aso_data.get("cdsSequence"),
+        # This used to pass `aso_sequence=aso_data.get("cdsSequence")` — the
+        # TARGET GENE's coding sequence, thousands of nucleotides long — into a
+        # function whose descriptors (length, GC, Tm, CpG count) are meant for a
+        # 16-25 nt oligonucleotide. Every CDS tripped "Length > 25 nt" as a
+        # Lipinski violation and had a PBPK curve drawn for it. No candidate
+        # oligo exists at this point in the pipeline, so no sequence liability
+        # is computed here. What gene context alone genuinely supports is the
+        # on-target pharmacology, and that is what remains.
+        gene_pharmacology = await _run_sync(lambda: get_sequence_liabilities(
+            aso_sequence=None,
             gene_context={
                 "vitalOrganTpm": expr_details.get("vital_organ_tpm"),
                 "vitalOrganTissues": expr_details.get("vital_organ_tissues", []),
                 "essentialGene": dependency_data.get("essentialGene"),
                 "loeufDecile": constraint_data.get("loeufDecile"),
             }
-        ), "ADMET lookup", {})
+        ), "on-target pharmacology lookup", {})
 
         # Protein chain — depends on protein_db_ids → protein_properties
         protein_props = {}
@@ -941,38 +949,23 @@ async def initialize_target(payload: TargetRequest):
                 for p in (disease_info.get("diseases", []) or [])
             ],
 
-            # ADMET prediction for target assessment
-            "admetAvailable": admet_data.get("admetAvailable"),
-            "absorptionScore": admet_data.get("absorptionScore"),
-            "absorptionLevel": admet_data.get("absorptionLevel"),
-            "distributionScore": admet_data.get("distributionScore"),
-            "distributionLevel": admet_data.get("distributionLevel"),
-            "metabolismScore": admet_data.get("metabolismScore"),
-            "metabolismLevel": admet_data.get("metabolismLevel"),
-            "excretionScore": admet_data.get("excretionScore"),
-            "excretionLevel": admet_data.get("excretionLevel"),
-            "toxicityScore": admet_data.get("toxicityScore"),
-            "toxicityLevel": admet_data.get("toxicityLevel"),
-            "cellUptake": admet_data.get("cellUptake"),
-            "proteinBinding": admet_data.get("proteinBinding"),
-            "nucleaseSensitivity": admet_data.get("nucleaseSensitivity"),
-            "renalClearance": admet_data.get("renalClearance"),
-            "immunogenicity": admet_data.get("immunogenicity"),
-            "offTargetRisk": admet_data.get("offTargetRisk"),
-            "hemolysisRisk": admet_data.get("hemolysisRisk"),
-            "admetAnalysis": admet_data.get("admetAnalysis"),
-            "admetWarnings": admet_data.get("admetWarnings", []),
-            "admetStrengths": admet_data.get("admetStrengths", []),
-            "sequenceDescriptors": admet_data.get("sequenceDescriptors"),
-            "pbpkTimeSeries": admet_data.get("pbpkTimeSeries"),
-            "chargePhProfile": admet_data.get("chargePhProfile"),
-            "lipinskiViolations": admet_data.get("lipinskiViolations"),
-            "structuralHotspots": admet_data.get("structuralHotspots"),
-            "chemicalSpaceProjection": admet_data.get("chemicalSpaceProjection"),
-            "onTargetToxicityRisk": admet_data.get("onTargetToxicityRisk"),
-            "onTargetToxicityLevel": admet_data.get("onTargetToxicityLevel"),
-            "therapeuticWindow": admet_data.get("therapeuticWindow"),
-            "distributionNotes": admet_data.get("distributionNotes", []),
+            # On-target pharmacology for target assessment.
+            #
+            # This block used to flatten 30 "ADMET" fields — absorption,
+            # distribution, metabolism, excretion, cell uptake, protein
+            # binding, renal clearance, a PBPK time series, a charge/pH
+            # profile, Lipinski violations and a 2-D chemical-space
+            # projection — all derived from the target gene's CDS. Those
+            # endpoints are properties of a finished oligonucleotide's
+            # backbone chemistry and formulation, not of a coding sequence,
+            # and no candidate oligo exists at this stage. See
+            # services/sequence_liability_service.py for the full reasoning.
+            #
+            # What survives is the part gene context genuinely supports: the
+            # consequence of modulating this gene, from gnomAD constraint,
+            # essentiality and vital-organ expression.
+            "onTargetPharmacology": gene_pharmacology.get("onTargetPharmacology"),
+            "onTargetPharmacologyNotAssessed": gene_pharmacology.get("notAssessed"),
         }
 
         fallback_payload = build_gene_fallback_payload(
@@ -1001,14 +994,30 @@ async def initialize_target(payload: TargetRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 class AdmetRequest(BaseModel):
+    """Request for /api/pipeline/sequence-liabilities.
+
+    Name kept for the deprecated /api/pipeline/admet-prediction alias.
+    `transcript_count` is retained for wire compatibility and is unused: it
+    fed an off-target risk estimate that never aligned against a genome.
+    """
+
     aso_sequence: str
     gene_symbol: Optional[str] = None
+    chemistry: Optional[str] = None
     transcript_count: int = 5
 
 
-@app.post("/api/pipeline/admet-prediction")
-async def admet_prediction(payload: AdmetRequest):
-    """Predict ADMET properties for an ASO/siRNA candidate sequence."""
+@app.post("/api/pipeline/sequence-liabilities")
+@app.post("/api/pipeline/admet-prediction")  # deprecated alias
+async def sequence_liabilities(payload: AdmetRequest):
+    """Sequence-determined liabilities for a candidate oligonucleotide.
+
+    Was `/api/pipeline/admet-prediction`. The old path still resolves so an
+    external caller is not silently broken, but the payload is the honest one:
+    innate-immune and structural flags that the base sequence actually
+    determines, plus a `notAssessed` map naming every ADMET endpoint that was
+    withdrawn and the biological reason for it.
+    """
     try:
         gene_context = {}
         if payload.gene_symbol:
@@ -1031,16 +1040,15 @@ async def admet_prediction(payload: AdmetRequest):
             except Exception:
                 pass
 
-        result = get_admet_prediction(
+        return get_sequence_liabilities(
             aso_sequence=payload.aso_sequence,
+            chemistry=getattr(payload, "chemistry", None),
             gene_context=gene_context,
-            transcript_count=payload.transcript_count,
         )
-        return result
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in admet_prediction route: {str(e)}")
+        logger.error(f"Error in sequence_liabilities route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

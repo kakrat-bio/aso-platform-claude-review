@@ -12,6 +12,7 @@
 """
 
 import ast
+import json
 import pathlib
 
 import pytest
@@ -309,3 +310,93 @@ def test_protein_replacement_source_has_no_utr_type_request():
             f"HTTP 400; use the cDNA/CDS alignment instead. Found in: "
             f"{offenders}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Mechanism-to-designer coverage, and the ADMET withdrawal
+# ---------------------------------------------------------------------------
+
+def test_editing_designer_refuses_mechanisms_it_cannot_build():
+    """`mechanism_id` used to be echoed into the output and change nothing.
+
+    Asking for A19 returned an ADAR-recruiting guide labelled "A19" — a REPAIR
+    crRNA in name only, since REPAIR guides carry a Cas13b direct-repeat
+    scaffold this service never emits.
+    """
+    from services.rna_editing_service import _validate_editing_mechanism
+    _validate_editing_mechanism("A13", "a_to_i")
+    _validate_editing_mechanism("A17", "a_to_i")
+    _validate_editing_mechanism("A16", "c_to_u")
+    _validate_editing_mechanism("A20", "trans_splicing")
+    for mech in ("A18", "A19"):
+        with pytest.raises(ValueError, match="not designable"):
+            _validate_editing_mechanism(mech, "a_to_i")
+    with pytest.raises(ValueError, match="does not perform"):
+        _validate_editing_mechanism("A13", "c_to_u")
+
+
+def test_every_designable_mechanism_has_a_designer():
+    """A mechanism advertising designAvailable must be built by something."""
+    import glob
+    from services.rna_processing_service import RNA_PROCESSING_MECHANISMS
+    from services.translational_regulation_service import (
+        TRANSLATIONAL_MECHANISM_CHEMISTRY,
+    )
+    from services.gene_upregulation_service import UPREGULATION_MECHANISM_DESIGN
+    from services.rna_neutralization_service import (
+        NEUTRALIZATION_MECHANISM_CHEMISTRY,
+    )
+    from services.rna_editing_service import EDITING_MECHANISM_EDIT_TYPES
+
+    covered = (set(RNA_PROCESSING_MECHANISMS)
+               | set(TRANSLATIONAL_MECHANISM_CHEMISTRY)
+               | set(UPREGULATION_MECHANISM_DESIGN)
+               | set(NEUTRALIZATION_MECHANISM_CHEMISTRY)
+               | set(EDITING_MECHANISM_EDIT_TYPES)
+               # gene_silencing_service._mechanism_design_constraints
+               | {"A1", "A2", "A12", "A15"})
+
+    orphans = []
+    for path in glob.glob("rulebooks/A*/rule.json"):
+        rule = json.loads(pathlib.Path(path).read_text())
+        arb = rule.get("arbitration", {})
+        mech = rule.get("mechanismId") or pathlib.Path(path).parent.name
+        if arb.get("designAvailable") and mech not in covered:
+            orphans.append(mech)
+    assert not orphans, (
+        f"these mechanisms advertise designAvailable=True but no designer "
+        f"accepts them, so a request for one silently returns another "
+        f"mechanism's candidates: {sorted(orphans)}"
+    )
+
+
+def test_admet_endpoints_are_withdrawn_with_reasons():
+    """Sequence-independent ADMET endpoints must not come back silently."""
+    from services.sequence_liability_service import (
+        NOT_ASSESSED, get_sequence_liabilities,
+    )
+    out = get_sequence_liabilities("GCCGCGGGTTTTCCCGGAAA", chemistry="gapmer")
+    assert out["available"] is True
+    for gone in ("absorptionScore", "distributionScore", "metabolismScore",
+                 "excretionScore", "pbpkTimeSeries", "lipinskiViolations",
+                 "chargePhProfile", "hemolysisRisk",
+                 "chemicalSpaceProjection", "cellUptake", "renalClearance"):
+        assert gone not in out, f"{gone} is back in the payload"
+    # Every withdrawal carries a stated biological reason.
+    for field, reason in NOT_ASSESSED.items():
+        assert len(reason) > 40, f"{field} has no real reason attached"
+    assert {"absorption", "distribution", "metabolism", "excretion",
+            "halfLife", "lipinskiViolations"} <= set(NOT_ASSESSED)
+
+
+def test_sequence_liabilities_keeps_what_sequence_determines():
+    from services.sequence_liability_service import get_sequence_liabilities
+    # CpG-rich, G-quadruplex-forming, uridine-tract-carrying.
+    out = get_sequence_liabilities("CGCGCGGGGGAAUUUUCGCG")
+    ids = {f["id"] for f in out["immuneAndStructural"]["flags"]}
+    assert {"cpg_tlr9", "g_quadruplex", "uridine_tract_tlr78"} <= ids
+    for flag in out["immuneAndStructural"]["flags"]:
+        assert flag["reasoning"], f"{flag['id']} has no biological reasoning"
+    # A clean sequence raises nothing.
+    quiet = get_sequence_liabilities("AACAACAACAACAACAACAA")
+    assert quiet["immuneAndStructural"]["flags"] == []

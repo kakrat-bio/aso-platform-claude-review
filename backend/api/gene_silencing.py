@@ -24,7 +24,7 @@ from services.rna_processing_service import (
 )
 from services.variant_details_service import get_clinvar_variants
 from services.notification_service import add_notification
-from services.admet_service import get_admet_prediction
+from services.sequence_liability_service import get_sequence_liabilities
 
 router = APIRouter()
 
@@ -124,20 +124,29 @@ async def generate_aso_candidates(payload: CandidateRequest):
         f"Candidate design completed for {payload.ensembl_gene_id}.",
     )
 
-    top_admet = {}
+    # Was an "ADMET" block per candidate. Absorption, distribution,
+    # metabolism, excretion and half-life are set by the backbone chemistry and
+    # any conjugate, and this call never even passed the chemistry — see the
+    # module docstring in services/admet_service.py. What a sequence does
+    # determine (CpG/TLR9, G-quadruplex, uridine tracts) is reported instead,
+    # with the chemistry echoed alongside so the reader can see what the flags
+    # do and do not account for.
+    top_liabilities = {}
     if candidates:
-        top_admet = get_admet_prediction(
+        top_liabilities = get_sequence_liabilities(
             aso_sequence=candidates[0]["sequence"],
-            transcript_count=len(target.get("transcripts", [])),
+            chemistry=candidates[0].get("chemistry") or payload.chemistry,
         )
 
     enriched_candidates = []
     for candidate in candidates:
-        admet = get_admet_prediction(
-            aso_sequence=candidate["sequence"],
-            transcript_count=len(target.get("transcripts", [])),
-        )
-        enriched = {**candidate, "admet": admet}
+        enriched = {
+            **candidate,
+            "sequenceLiabilities": get_sequence_liabilities(
+                aso_sequence=candidate["sequence"],
+                chemistry=candidate.get("chemistry") or payload.chemistry,
+            ),
+        }
         enriched_candidates.append(enriched)
 
     return {
@@ -152,7 +161,7 @@ async def generate_aso_candidates(payload: CandidateRequest):
         "mechanismNotes": candidates[0].get("mechanismNotes", "") if candidates else "",
         "isAlleleSpecific": (payload.silencing_scope or "").lower().strip() == "allele_specific",
         "variantParse": parse_hgvs_c(payload.known_variant) if payload.known_variant else None,
-        "admet": top_admet,
+        "sequenceLiabilities": top_liabilities,
         "candidates": enriched_candidates,
     }
 

@@ -648,6 +648,48 @@ def _editing_mechanism_notes(edit_type: str, chemistry: str) -> str:
 # Main candidate generation
 # ---------------------------------------------------------------------------
 
+# Which mechanism this service can actually build a guide for, and under
+# which edit type.
+#
+# `mechanism_id` used to be a passenger: it was echoed into every candidate
+# and changed nothing. Asking for A19 returned an ADAR-recruiting guide
+# labelled "A19", which is a REPAIR crRNA in name only — REPAIR guides carry
+# a Cas13b direct-repeat scaffold this service never emits. The design is
+# driven by `edit_type`, which is correct; what was missing was a check that
+# the requested mechanism is one this architecture produces.
+#
+# A13 and A17 both recruit ENDOGENOUS ADAR with a linear antisense guide and
+# differ mainly in guide length (SDRE ~25-40 nt, LEAPER arRNA ~71-111 nt),
+# which the `guide_length` parameter already covers. A16 is the C-to-U
+# counterpart. A20 is built by the trans-splicing path, which emits a
+# pre-trans-splicing molecule rather than a deaminase guide.
+EDITING_MECHANISM_EDIT_TYPES: dict[str, set[str]] = {
+    "A13": {"a_to_i"},
+    "A16": {"c_to_u"},
+    "A17": {"a_to_i"},
+    "A20": {"trans_splicing"},
+}
+
+
+def _validate_editing_mechanism(mechanism_id: str, edit_type: str) -> None:
+    """Refuse to label a guide with a mechanism this service does not build."""
+    allowed = EDITING_MECHANISM_EDIT_TYPES.get(mechanism_id)
+    if allowed is None:
+        raise ValueError(
+            f"{mechanism_id} is not designable by this service. It builds "
+            f"linear guides that recruit an endogenous deaminase, plus "
+            f"trans-splicing molecules; mechanisms needing a delivered "
+            f"protein and a scaffolded crRNA (CIRTS, REPAIR) are out of "
+            f"scope. Designable here: "
+            f"{', '.join(sorted(EDITING_MECHANISM_EDIT_TYPES))}."
+        )
+    if edit_type not in allowed:
+        raise ValueError(
+            f"{mechanism_id} does not perform '{edit_type}' editing. It "
+            f"supports: {', '.join(sorted(allowed))}."
+        )
+
+
 def generate_guide_rna_candidates(
     ensembl_gene_id: str,
     variant_hgvs: str,
@@ -674,6 +716,8 @@ def generate_guide_rna_candidates(
     relative to the exon-intron boundary, and ``abd_length`` controls the
     actual length of the antisense binding domain (i.e. the guide length).
     """
+    _validate_editing_mechanism(mechanism_id, edit_type)
+
     if modifications is None:
         modifications = ["phosphorothioate"]
 
