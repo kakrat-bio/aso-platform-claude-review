@@ -264,7 +264,9 @@ export interface GrnaCandidate {
   score: number;
   gc: number;
   selfComplementarity: number;
-  offTargets: number;
+  /** Fraction of 6-mers that repeat. NOT a genomic off-target count —
+   *  no alignment is performed anywhere in this service. */
+  internalRepetitiveness: number;
   polyT: boolean;
   color: string;
   specificityScore: number;

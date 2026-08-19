@@ -108,6 +108,7 @@ export default function UploadSequencePage() {
   const [analysis, setAnalysis] = useState<AnalysisReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [computedInBrowser, setComputedInBrowser] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedRecs, setExpandedRecs] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState("overview");
@@ -228,7 +229,10 @@ export default function UploadSequencePage() {
       const searchSeq = strand === "-" ? revCompLocal(s) : s;
       for (let i = 0; i <= searchSeq.length - 23; i++) {
         const pam = searchSeq.slice(i + 20, i + 23);
-        if (!/^NGG$/.test(pam)) continue;
+        // `N` is a literal N in a regex, not "any base": /^NGG$/ only matched
+        // the three characters "NGG" and so found no PAM in any real
+        // sequence. Same bug as the backend scanner had.
+        if (!/^[ACGT]GG$/.test(pam)) continue;
 
         const spacer = searchSeq.slice(i, i + 20);
         const gc = spacer.split("").filter((b) => "GC".includes(b)).length;
@@ -246,9 +250,12 @@ export default function UploadSequencePage() {
         if (selfComp < 0.2) score += 15;
         else if (selfComp < 0.4) score += 8;
 
-        const offTargets = estimateOffTargets(spacer);
-        if (offTargets <= 2) score += 15;
-        else if (offTargets <= 5) score += 8;
+        // Was `estimateOffTargets`, which scaled 6-mer repetitiveness by 12
+        // and reported it as a count of genomic off-target sites. Nothing here
+        // aligns against a genome, so no count exists to report.
+        const repetitiveness = kmerRepetitiveness(spacer);
+        if (repetitiveness <= 0.1) score += 15;
+        else if (repetitiveness <= 0.25) score += 8;
         else score += 3;
 
         score = Math.min(100, Math.max(0, score));
@@ -256,7 +263,7 @@ export default function UploadSequencePage() {
         const color = score >= 70 ? "emerald" : score >= 40 ? "amber" : "rose";
 
         // Specificity score (MIT-style: 100 / (100 + sum of off-target penalties))
-        const specificityScore = Math.min(100, Math.max(0, 100 - offTargets * 8 - selfComp * 15));
+        const specificityScore = Math.min(100, Math.max(0, 100 - repetitiveness * 96 - selfComp * 15));
         // Efficiency score (Doench 2016-inspired: favors GC 40-80%, G-start, low self-complementarity)
         let effScore = 0;
         if (gcPct >= 0.4 && gcPct <= 0.8) effScore += 35;
@@ -280,7 +287,7 @@ export default function UploadSequencePage() {
           score: Math.round(score * 10) / 10,
           gc: Math.round(gcPct * 1000) / 10,
           selfComplementarity: Math.round(selfComp * 1000) / 1000,
-          offTargets,
+          internalRepetitiveness: Math.round(repetitiveness * 1000) / 1000,
           polyT: /TTTT/.test(spacer),
           color,
           specificityScore: Math.round(specificityScore),
@@ -327,7 +334,9 @@ export default function UploadSequencePage() {
     return len > 0 ? matches / len : 0;
   }
 
-  function estimateOffTargets(seq: string): number {
+  /** Fraction of 6-mers that repeat. NOT an off-target count — nothing here
+   *  aligns against a genome. */
+  function kmerRepetitiveness(seq: string): number {
     const k = 6;
     const kmers = new Set<string>();
     for (let i = 0; i <= seq.length - k; i++) {
@@ -589,10 +598,12 @@ export default function UploadSequencePage() {
       modScores.riscLoading = { score: 30 <= gc && gc <= 52 ? 90 : 50, rationale: "GC 30-52% optimal for RISC loading efficiency" };
       modScores.specificity = { score: Math.max(0, Math.min(100, Math.round(length * 4))), rationale: "19-25 nt length balances potency and specificity" };
     } else if (modality === "mrna") {
-      modScores.capEfficiency = { score: 70, rationale: "5' cap required for ribosome recruitment" };
+      // capEfficiency (70) and nucleosideMod (90) used to be scored here.
+      // Neither read the sequence — both returned a constant for every input
+      // and describe how the mRNA is manufactured, which an uploaded sequence
+      // cannot show. Dropped rather than averaged into the total.
       modScores.polyAStability = { score: /A{10,}$/.test(seq) ? 85 : 30, rationale: /A{10,}$/.test(seq) ? "Poly-A tail present" : "No poly-A tail detected" };
       modScores.mrnaStability = { score: 40 <= gc && gc <= 60 ? 80 : 50, rationale: "GC 40-60% optimal for mRNA half-life" };
-      modScores.nucleosideMod = { score: 90, rationale: "m1Ψ and m5C modifications reduce innate immune activation" };
     } else if (modality === "sgrna") {
       modScores.gcOptimal = { score: 40 <= gc && gc <= 80 ? 90 : 40, rationale: "GC 40-80% optimal for sgRNA on-target activity" };
       modScores.pamProximity = { score: seq.slice(-5).includes("GG") ? 80 : 50, rationale: "NGG PAM motif detected near 3' end" };
@@ -967,10 +978,19 @@ export default function UploadSequencePage() {
 
     try {
       let result: AnalysisReport | null = null;
+      // The browser fallback used to be silent: if the API call failed for any
+      // reason, a second, independently-written analysis was substituted and
+      // rendered exactly like the real one. The two do not agree — they use
+      // different formulas, and the browser copy carries no ViennaRNA or
+      // primer3 — so the reader had no way to tell which one they were
+      // looking at. It still runs, because a degraded answer beats a blank
+      // screen, but it now says so.
       try {
         result = await analyzeSequence(validation.sequence, selectedModality as Modality) as unknown as AnalysisReport;
+        setComputedInBrowser(false);
       } catch {
         result = clientSideAnalyze(validation.sequence, selectedModality) as unknown as AnalysisReport;
+        setComputedInBrowser(true);
       }
       cancelled = true;
       if (!result) {
@@ -1371,6 +1391,20 @@ export default function UploadSequencePage() {
           {/* ===== STEP 4: ANALYSIS ===== */}
           {step === "analysis" && analysis && (
             <div className="space-y-5">
+              {computedInBrowser && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-[12px] font-semibold text-amber-900">
+                    Computed in your browser — the analysis service was unreachable
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] text-amber-800">
+                    This is a reduced fallback. It has no ViennaRNA folding and no
+                    primer3 nearest-neighbour Tm, and its heuristics are written
+                    separately from the server&apos;s, so numbers here will not match a
+                    server-side run. Re-run when the service is available before
+                    relying on any of it.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <SectionHeader step="4" title="Analysis Results" />
                 <div className="flex items-center gap-3">

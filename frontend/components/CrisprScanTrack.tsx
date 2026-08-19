@@ -80,7 +80,7 @@ export default function CrisprScanTrack({ candidates, seqLength }: CrisprScanTra
                   showTip(
                     e.clientX,
                     e.clientY,
-                    `#${i + 1} | pos ${c.position} | ${c.sequence} | ${c.pam} | score ${c.score.toFixed(1)} | off-targets ${c.offTargets}`
+                    `#${i + 1} | pos ${c.position} | ${c.sequence} | ${c.pam} | score ${c.score.toFixed(1)} | repetitiveness ${c.internalRepetitiveness.toFixed(3)}`
                   )
                 }
                 onMouseLeave={hideTip}
@@ -94,7 +94,7 @@ export default function CrisprScanTrack({ candidates, seqLength }: CrisprScanTra
                   showTip(
                     e.clientX,
                     e.clientY,
-                    `#${i + 1} | pos ${c.position} | ${c.sequence} | ${c.pam} | score ${c.score.toFixed(1)} | off-targets ${c.offTargets}`
+                    `#${i + 1} | pos ${c.position} | ${c.sequence} | ${c.pam} | score ${c.score.toFixed(1)} | repetitiveness ${c.internalRepetitiveness.toFixed(3)}`
                   )
                 }
                 onMouseLeave={hideTip}

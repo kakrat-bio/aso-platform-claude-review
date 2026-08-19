@@ -333,10 +333,30 @@ def _calc_tm(seq: str) -> float:
     Uses primer3's calc_tm which implements the unified nearest-neighbor model
     with salt corrections — the same method used by IDT OligoAnalyzer, Primer3,
     and other professional oligo design tools.
+
+    U is folded to T first. primer3 carries DNA nearest-neighbour parameters
+    and raises ValueError on any non-ACGT base, so an RNA-alphabet oligo
+    reaching it is a hard failure, not a degraded number. That is not
+    hypothetical: `rna_processing_service` renders its sequences in the RNA
+    alphabet (`replace("T", "U")`) before calling this, which made every
+    TG04 design request 422 with "Sequence contains non-ACGT base 'U'".
+
+    Folding U to T is the right normalisation rather than a workaround: the
+    value being computed IS the DNA-analogue Tm. It does not model 2'-MOE,
+    cEt, LNA or a morpholino backbone — `_effective_tm_boost` applies the
+    chemistry adjustment separately, on top of this.
     """
     if not seq:
         return 0.0
-    return round(primer3.calc_tm(seq.upper()), 1)
+    dna = seq.upper().replace("U", "T")
+    if set(dna) - set("ACGT"):
+        # Ambiguity codes and gaps have no nearest-neighbour parameters.
+        # Returning 0.0 would read as "melts at zero"; refuse instead.
+        raise ValueError(
+            f"Tm is undefined for a sequence with non-ACGTU bases: "
+            f"{sorted(set(dna) - set('ACGT'))}"
+        )
+    return round(primer3.calc_tm(dna), 1)
 
 
 def _self_complement_mfe(seq: str) -> float:
@@ -611,8 +631,36 @@ def _target_duplex_energy(candidate_seq: str, target_seq: str) -> float:
 
 
 def _reverse_complement(seq: str) -> str:
-    """Return the antisense oligonucleotide sequence for an RNA target site."""
-    return seq.upper().translate(str.maketrans("ATGC", "TACG"))[::-1]
+    """Antisense oligonucleotide for a target site, in the input's alphabet.
+
+    U USED TO PASS THROUGH UNCOMPLEMENTED. The translation table covered
+    "ATGC" only, so a uracil in an RNA-alphabet target was copied into the
+    oligo verbatim instead of pairing to adenine. `rna_processing_service`
+    renders its splice-junction and polyadenylation windows in the RNA
+    alphabet, so every TG04 candidate was non-complementary at each U of its
+    target — a designed oligo that does not bind what it is aimed at, emitted
+    with a composite score as if it did.
+
+    The output alphabet follows the input: an RNA target yields an RNA-alphabet
+    oligo, a DNA target a DNA-alphabet one. Mixing the two in one string, which
+    is what the old behaviour produced, is not a representation of anything.
+    """
+    up = seq.upper()
+    is_rna = "U" in up and "T" not in up
+    pairs = {"A": "U" if is_rna else "T", "T": "A", "U": "A",
+             "G": "C", "C": "G"}
+    out = []
+    for base in reversed(up):
+        try:
+            out.append(pairs[base])
+        except KeyError:
+            # An ambiguity code has no single complement. Emitting "N" would
+            # look like a designed base; refuse the whole oligo instead.
+            raise ValueError(
+                f"Cannot reverse-complement {base!r} in {seq!r}: only "
+                f"A, C, G, T and U have a defined complement."
+            ) from None
+    return "".join(out)
 
 
 # Estimated Tm boost (°C) contributed by each chemistry's affinity-modifying

@@ -167,3 +167,62 @@ def test_every_advertised_target_element_is_accepted():
             f"endpoint rejects. Add it to ELEMENT_ALIASES "
             f"(currently {sorted(ELEMENT_ALIASES)})."
         )
+
+
+# ---------------------------------------------------------------------------
+# TG04 designer and the upload path
+# ---------------------------------------------------------------------------
+
+def test_reverse_complement_pairs_uracil():
+    """U used to pass through uncomplemented, so TG04 oligos did not bind."""
+    from services.gene_silencing_service import _reverse_complement as rc
+    pair = {"A": "U", "U": "A", "G": "C", "C": "G", "T": "A"}
+    for target in ("AAUUAAUAGGAUUAUUAG", "UUACCAACAGGACCACCAG",
+                   "AACCAACAGGACCACCAG", "ATGCATGCATGC"):
+        got = rc(target)
+        expected = "".join(pair[b] for b in reversed(target))
+        assert got.replace("T", "U") == expected.replace("T", "U"), target
+        # The alphabet must not be mixed: T and U cannot both appear.
+        assert not ("T" in got and "U" in got), f"mixed alphabet: {got}"
+
+
+def test_reverse_complement_refuses_ambiguity_codes():
+    from services.gene_silencing_service import _reverse_complement as rc
+    with pytest.raises(ValueError):
+        rc("ACGN")
+
+
+def test_calc_tm_accepts_rna_alphabet():
+    """primer3 raises on U; TG04 renders its windows in the RNA alphabet."""
+    from services.gene_silencing_service import _calc_tm
+    assert _calc_tm("GAAAUAUUCCUUAUAGCC") == _calc_tm("GAAATATTCCTTATAGCC")
+    with pytest.raises(ValueError):
+        _calc_tm("GAAANATTCC")
+
+
+def test_grna_scanner_finds_real_pams():
+    """/^NGG$/ matched the literal characters "NGG", so this found nothing."""
+    from services.upload_service import _generate_grna_candidates
+    seq = ("GACGTTGCAGGTACCATGGCTAGCTAGGTACCGGTAGCTAGCTAGCTAGGTTACGATCGATCGG"
+           "ATCGATCGGCTAGCTAGCTAGCTAAGGCTTGCATGCATGCAGGTACGT")
+    candidates = _generate_grna_candidates(seq)
+    assert candidates, "no gRNA found in a sequence containing NGG PAMs"
+    for c in candidates:
+        assert len(c["sequence"]) == 20
+        assert c["pam"][1:] == "GG" and c["pam"][0] in "ACGT"
+        # No fabricated off-target count may reappear.
+        assert "offTargets" not in c
+        assert 0.0 <= c["internalRepetitiveness"] <= 1.0
+
+
+def test_scorecard_excludes_sequence_independent_constants():
+    """capEfficiency=70 and nucleosideMod=90 ignored the sequence entirely."""
+    from services.upload_service import _modification_scorecard
+    a = _modification_scorecard("AUGGCUAGCUAGCUAGC" + "A" * 12, "mrna")
+    b = _modification_scorecard("GGGGGGCCCCCCGGGGGG", "mrna")
+    assert "capEfficiency" not in a["scores"]
+    assert "nucleosideMod" not in a["scores"]
+    assert {adv["id"] for adv in a["advisories"]} == {"capEfficiency",
+                                                     "nucleosideMod"}
+    # overallScore must now move with the sequence.
+    assert a["overallScore"] != b["overallScore"]

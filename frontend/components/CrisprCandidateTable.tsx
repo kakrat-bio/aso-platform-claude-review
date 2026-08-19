@@ -115,10 +115,17 @@ const COLS: ColDef[] = [
     get: (c) => efficiencyBadge(c.efficiencyScore),
   },
   {
-    key: "offtarget",
-    label: "Off-targets",
+    // Was "Off-targets", showing a count derived from 6-mer repetitiveness
+    // without any genome alignment. The underlying statistic is kept; the
+    // claim that it counts off-target sites is not.
+    key: "repetitiveness",
+    label: "Internal Repetitiveness",
     align: "center",
-    get: (c) => <span className="text-slate-600">{c.offTargets}</span>,
+    get: (c) => (
+      <span className="text-slate-600" title="Fraction of 6-mers that repeat within the spacer. Not an off-target screen — no genome alignment is performed.">
+        {c.internalRepetitiveness.toFixed(3)}
+      </span>
+    ),
   },
   {
     key: "mismatchdist",
@@ -146,7 +153,7 @@ const COLS: ColDef[] = [
   },
 ];
 
-type SortKey = "score" | "position" | "gc" | "offTargets" | "selfComplementarity" | "specificityScore" | "efficiencyScore";
+type SortKey = "score" | "position" | "gc" | "internalRepetitiveness" | "selfComplementarity" | "specificityScore" | "efficiencyScore";
 type SortDir = "asc" | "desc";
 
 export default function CrisprCandidateTable({ candidates }: { candidates: GrnaCandidate[] }) {
@@ -183,7 +190,7 @@ export default function CrisprCandidateTable({ candidates }: { candidates: GrnaC
   const sortableMap: Record<string, SortKey> = {
     position: "position",
     score: "score",
-    offtarget: "offTargets",
+    repetitiveness: "internalRepetitiveness",
     specificity: "specificityScore",
     efficiency: "efficiencyScore",
     gc: "gc",

@@ -516,7 +516,12 @@ def _generate_grna_candidates(seq: str) -> List[Dict[str, Any]]:
 
     for i in range(length - 22):
         pam = upper[i + 20 : i + 23]
-        if not re.fullmatch(r"NGG", pam):
+        # `N` is a LITERAL N in a regex, not "any base" — `re.fullmatch(r"NGG",
+        # pam)` only ever matched the three characters "NGG", which does not
+        # occur in a real sequence. This scanner therefore returned zero
+        # candidates for every input, on a test sequence carrying nine valid
+        # NGG PAMs. Spell the degeneracy out as a character class.
+        if not re.fullmatch(r"[ACGT]GG", pam):
             continue
 
         spacer = upper[i : i + 20]
@@ -542,10 +547,15 @@ def _generate_grna_candidates(seq: str) -> List[Dict[str, Any]]:
         elif self_comp < 0.4:
             score += 8.0
 
-        off_targets = _estimate_off_target_count(spacer)
-        if off_targets <= 2:
+        # Internal 6-mer repetitiveness, in [0, 1]. This used to be multiplied
+        # by 12 and reported as `offTargets` — an integer COUNT of genomic
+        # off-target sites, from a statistic that never touches a genome. A
+        # count invites the reader to believe a search happened. Only the
+        # repetitiveness it was derived from is reported now.
+        repetitiveness = _kmer_repetitiveness(spacer)
+        if repetitiveness <= 0.1:
             score += 15.0
-        elif off_targets <= 5:
+        elif repetitiveness <= 0.25:
             score += 8.0
         else:
             score += 3.0
@@ -563,7 +573,12 @@ def _generate_grna_candidates(seq: str) -> List[Dict[str, Any]]:
             "score": round(score, 1),
             "gc": round(gc_pct * 100, 1),
             "selfComplementarity": round(self_comp, 3),
-            "offTargets": off_targets,
+            "internalRepetitiveness": round(repetitiveness, 3),
+            "offTargetsNote": (
+                "Not screened. No genome or transcriptome alignment is "
+                "performed anywhere in this service; use BLAST or Cas-OFFinder "
+                "for a real off-target search."
+            ),
             "polyT": "TTTT" in spacer,
             "color": color,
         })
@@ -579,14 +594,18 @@ def _self_complementarity_score(seq: str) -> float:
     return matches / max(len(seq), 1)
 
 
-def _estimate_off_target_count(seq: str) -> int:
-    """Heuristic off-target estimate based on 6-mer repetitiveness."""
-    k = 6
-    kmers = [seq[i : i + k] for i in range(len(seq) - k + 1)]
-    unique = len(set(kmers))
-    total = len(kmers)
-    repetitiveness = 1 - unique / total if total > 0 else 0
-    return round(repetitiveness * 12)
+def _kmer_repetitiveness(seq: str, k: int = 6) -> float:
+    """Fraction of k-mers in the sequence that are repeats of another k-mer.
+
+    Was `_estimate_off_target_count`, which scaled this by 12 and returned it
+    as a genomic off-target count. It is not one: nothing here aligns against
+    a genome. Repetitiveness is a weak proxy for a sequence being hard to
+    place uniquely, and it is reported as exactly that.
+    """
+    kmers = [seq[i:i + k] for i in range(len(seq) - k + 1)]
+    if not kmers:
+        return 0.0
+    return 1 - len(set(kmers)) / len(kmers)
 
 
 # ---------------------------------------------------------------------------
@@ -840,7 +859,8 @@ def _modification_scorecard(seq: str, modality: str) -> Dict[str, Any]:
     gc = _gc_content(seq)
     length = len(seq)
 
-    scores = {}
+    scores: Dict[str, Any] = {}
+    advisories: List[Dict[str, str]] = []
 
     if modality == "aso":
         # LNA boosting potential
@@ -885,26 +905,40 @@ def _modification_scorecard(seq: str, modality: str) -> Dict[str, Any]:
         }
 
     elif modality == "mrna":
-        # Cap efficiency
-        scores["capEfficiency"] = {
-            "score": 70,
-            "rationale": "5' cap required for ribosome recruitment; ARCA or CleanCap recommended",
-        }
-        # PolyA tail
+        # Poly-A tail: an observation about the sequence, so it keeps a score.
+        has_tail = seq.endswith("A" * 10)
         scores["polyAStability"] = {
-            "score": 85 if seq.endswith("A" * 10) else 30,
-            "rationale": "Poly-A tail present — contributes to mRNA stability" if seq.endswith("A" * 10) else "No poly-A tail detected — essential for mRNA stability",
+            "score": 85 if has_tail else 30,
+            "rationale": "Poly-A tail present — contributes to mRNA stability" if has_tail else "No poly-A tail detected — essential for mRNA stability",
         }
         # GC balance for mRNA stability
         scores["mrnaStability"] = {
             "score": max(0, min(100, round(60 + (10 if 40 <= gc <= 60 else -20)))),
             "rationale": "GC 40-60% optimal for mRNA half-life" if 40 <= gc <= 60 else "GC outside optimal range for mRNA stability",
         }
-        # Nucleoside modification
-        scores["nucleosideMod"] = {
-            "score": 90,
-            "rationale": "m1Ψ and m5C modifications reduce innate immune activation",
-        }
+        # `capEfficiency: 70` and `nucleosideMod: 90` used to sit here as
+        # scores. Neither looked at the sequence — they returned the same
+        # constant for every input, and both describe how the mRNA is
+        # MANUFACTURED (cap analogue, m1-pseudouridine substitution), which an
+        # uploaded sequence cannot show. Averaged into overallScore they moved
+        # every mRNA upload by a fixed amount and made the total look
+        # sequence-derived when 40% of it was not. They are advisory notes now,
+        # carry no score, and are excluded from the average.
+        advisories = [
+            {
+                "id": "capEfficiency",
+                "note": "5' cap required for ribosome recruitment; ARCA or "
+                        "CleanCap are the usual choices. Not determinable from "
+                        "sequence — it depends on the IVT protocol.",
+            },
+            {
+                "id": "nucleosideMod",
+                "note": "m1\u03a8 and m5C substitution reduce innate immune "
+                        "activation. Not determinable from sequence — "
+                        "modified bases are not represented in an A/C/G/U "
+                        "upload.",
+            },
+        ]
 
     elif modality == "sgrna":
         # GC content for sgRNA
@@ -926,7 +960,18 @@ def _modification_scorecard(seq: str, modality: str) -> Dict[str, Any]:
     return {
         "modality": modality,
         "scores": scores,
-        "overallScore": round(sum(s["score"] for s in scores.values()) / max(len(scores), 1)),
+        # Averaged over sequence-derived scores only. Advisories are listed
+        # separately precisely so they cannot drift back into the total.
+        "overallScore": round(sum(s["score"] for s in scores.values())
+                              / max(len(scores), 1)),
+        "advisories": advisories,
+        "scoreBasis": (
+            "Heuristic flags computed from length, GC and motif content of the "
+            "uploaded sequence. Coefficients are rules of thumb, not fitted to "
+            "any activity dataset, and overallScore is their unweighted mean — "
+            "compare candidates with it, do not read it as a probability of "
+            "success."
+        ),
     }
 
 
