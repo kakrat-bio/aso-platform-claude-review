@@ -27,7 +27,10 @@ from database.db import SessionLocal
 from database.models import GeneFeatureBackup
 
 ENSEMBL_REST = "https://rest.ensembl.org"
-ENSEMBL_TIMEOUT = 10
+ENSEMBL_TIMEOUT = 20
+# Ensembl answers most lookups in ~1 s; transient timeouts and 429s are
+# common enough that a single attempt loses real data.
+ENSEMBL_MAX_RETRIES = 3
 
 # When the Ensembl REST site fails, remember when. During the cooldown window
 # we skip live queries entirely and serve the stored backup / fallback, so a
@@ -67,29 +70,72 @@ def _ensembl_request(
     ``_ensembl_available``.
     """
     global _ENSEMBL_DOWN_SINCE
-    try:
-        kwargs = {
-            "headers": {"Content-Type": "application/json"},
-            "timeout": ENSEMBL_TIMEOUT,
-        }
-        if params:
-            kwargs["params"] = params
-        if payload:
-            kwargs["json"] = payload
-        resp = requests.request(method, f"{ENSEMBL_REST}{path}", **kwargs)
-        if resp.status_code == 200:
-            with _ENSEMBL_DOWN_LOCK:
-                _ENSEMBL_DOWN_SINCE = None
-            return resp.json()
-        if resp.status_code >= 500:
-            with _ENSEMBL_DOWN_LOCK:
-                if _ENSEMBL_DOWN_SINCE is None:
-                    _ENSEMBL_DOWN_SINCE = time.time()
-    except (requests.RequestException, ValueError) as e:
-        logger.warning("Ensembl %s %s failed: %s", method, path, e)
-        with _ENSEMBL_DOWN_LOCK:
-            if _ENSEMBL_DOWN_SINCE is None:
-                _ENSEMBL_DOWN_SINCE = time.time()
+
+    # THIS CLIENT HAD NO RETRY, AND THAT SILENTLY BROKE TWO MECHANISMS.
+    #
+    # A single read timeout returned None, which `analyze_gene_features` turns
+    # into `verified: False`, which `feature_service._from_annotation` declines
+    # to read as evidence — so F4 (poison exon) and F6 (natural antisense
+    # transcript) stayed UNRESOLVED. Both are REQUIRED features, so A3 and A4
+    # halted on every real target and only scored when the user hand-asserted
+    # the matching molecular defect. Ensembl answers this lookup in about 0.9 s
+    # when it is not rate-limiting, so the failures were transient and a single
+    # retry recovers almost all of them.
+    #
+    # `gene_silencing_service._ensembl_get` already retries with backoff; this
+    # client simply never got the same treatment.
+    last_error: Exception | str | None = None
+    for attempt in range(1, ENSEMBL_MAX_RETRIES + 1):
+        try:
+            kwargs = {
+                "headers": {"Content-Type": "application/json"},
+                "timeout": ENSEMBL_TIMEOUT,
+            }
+            if params:
+                kwargs["params"] = params
+            if payload:
+                kwargs["json"] = payload
+            resp = requests.request(method, f"{ENSEMBL_REST}{path}", **kwargs)
+            if resp.status_code == 200:
+                with _ENSEMBL_DOWN_LOCK:
+                    _ENSEMBL_DOWN_SINCE = None
+                return resp.json()
+            # 429 is rate limiting, not an outage: back off and try again.
+            if resp.status_code == 429:
+                last_error = "HTTP 429 (rate limited)"
+                retry_after = resp.headers.get("Retry-After")
+                delay = float(retry_after) if retry_after and retry_after.isdigit() else attempt * 1.5
+                if attempt < ENSEMBL_MAX_RETRIES:
+                    time.sleep(min(delay, 5.0))
+                    continue
+            elif resp.status_code >= 500:
+                last_error = f"HTTP {resp.status_code}"
+                if attempt < ENSEMBL_MAX_RETRIES:
+                    time.sleep(attempt * 1.5)
+                    continue
+                # Only a persistent 5xx marks the site down.
+                with _ENSEMBL_DOWN_LOCK:
+                    if _ENSEMBL_DOWN_SINCE is None:
+                        _ENSEMBL_DOWN_SINCE = time.time()
+            else:
+                last_error = f"HTTP {resp.status_code}"
+            break
+        except (requests.RequestException, ValueError) as e:
+            last_error = e
+            if attempt < ENSEMBL_MAX_RETRIES:
+                logger.info("Ensembl %s %s attempt %d/%d failed (%s), retrying",
+                            method, path, attempt, ENSEMBL_MAX_RETRIES, e)
+                time.sleep(attempt * 1.5)
+                continue
+            # A timeout on one request is not evidence the site is down, and
+            # marking it down degrades every subsequent gene to the permissive
+            # fallback. Only connection-level failures do that.
+            if isinstance(e, requests.ConnectionError):
+                with _ENSEMBL_DOWN_LOCK:
+                    if _ENSEMBL_DOWN_SINCE is None:
+                        _ENSEMBL_DOWN_SINCE = time.time()
+    logger.warning("Ensembl %s %s failed after %d attempts: %s",
+                   method, path, ENSEMBL_MAX_RETRIES, last_error)
     return None
 
 

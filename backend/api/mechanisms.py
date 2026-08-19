@@ -251,6 +251,35 @@ async def gene_silencing_mechanisms(payload: GeneSilencingRequest):
     }
 
 
+def _resolve_gene_features(gene_symbol: str, supplied: Optional[dict],
+                           organism: str = "homo_sapiens") -> Optional[dict]:
+    """Gene features for the arbitration context, fetched if not supplied.
+
+    The endpoint used to pass `payload.gene_features` straight through, so a
+    caller that did not send them left F4 (poison exon) and F6 (natural
+    antisense transcript) UNRESOLVED. Both are REQUIRED features, so A3 and A4
+    halted for every real target and scored only when the user hand-asserted
+    the matching molecular defect — the platform never checked whether the
+    gene actually HAS a poison exon or a NAT.
+
+    Note the shape: `FeatureContext.gene_feature` reads
+    `gene_features["features"][key]`, so the WHOLE payload from
+    `analyze_gene_features` must be passed, not its `features` sub-dict.
+    Passing the inner dict silently resolves nothing.
+    """
+    if supplied:
+        # A caller may send either shape; normalise the inner one.
+        return supplied if "features" in supplied else {"features": supplied}
+    symbol = (gene_symbol or "").strip().upper()
+    if not symbol:
+        return None
+    try:
+        return analyze_gene_features(symbol, organism=organism)
+    except Exception as exc:  # never fail the ranking over an enrichment step
+        logger.warning("Gene-feature resolution failed for %s: %s", symbol, exc)
+        return None
+
+
 @router.post("/api/mechanisms/gene-upregulation")
 async def gene_upregulation_mechanisms(payload: GeneUpregulationRequest):
     if payload.defect_type not in GENE_UPREGULATION_DEFECT_TYPES:
@@ -260,7 +289,8 @@ async def gene_upregulation_mechanisms(payload: GeneUpregulationRequest):
         defect_type=payload.defect_type,
         delivery_context=payload.delivery_context,
         known_regulatory_element=payload.known_regulatory_element,
-        gene_features=payload.gene_features,
+        gene_features=_resolve_gene_features(
+            payload.gene_symbol, payload.gene_features),
     )
 
     return {

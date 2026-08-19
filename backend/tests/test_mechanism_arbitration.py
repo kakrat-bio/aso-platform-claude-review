@@ -610,4 +610,13 @@ def test_flagged_mechanisms_stay_out_of_the_ranking():
     ranked = {r["id"] for r in out["results"]}
     flagged = {m["id"] for m in out["flaggedMechanisms"]}
     assert not (ranked & flagged)
-    assert all(r["score"] is not None for r in out["results"])
+    # Everything that was actually assessed carries a score. HALTED does not:
+    # a halt means a required feature is unresolved, so the mechanism is
+    # unassessable and must not report `score: 1.0` from a vacuous interval.
+    for r in out["results"]:
+        if r["status"] == A.HALTED:
+            assert r["score"] is None, f"{r['id']} halted but reports a score"
+            assert r["applicability"] is None
+            assert r["confidence"] is None
+        else:
+            assert r["score"] is not None, f"{r['id']} was assessed but has no score"

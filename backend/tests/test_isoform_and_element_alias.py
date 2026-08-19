@@ -542,3 +542,96 @@ def test_a1_a2_are_separated_by_f10_when_a_transcript_is_supplied():
     assert by_id["A1"]["score"] != by_id["A2"]["score"], (
         "A1 and A2 scored identically with a real transcript supplied; the "
         "F10a/F10b split is not discriminating")
+
+
+# ---------------------------------------------------------------------------
+# A3 / A4 — the two TG02 mechanisms that depend on fetched gene features
+# ---------------------------------------------------------------------------
+
+def test_halted_mechanisms_carry_no_score():
+    """A halt means a required feature is unresolved — so it has no score.
+
+    HALTED was leaking `score: 1.0, applicability: [1.0, 1.0]` from the
+    vacuous interval an empty feature list produces. That asserts perfect
+    applicability for the one mechanism the system just said it cannot assess.
+    """
+    from services import mechanism_arbitration as MA
+    out = MA.arbitrate(MA.ArbitrationContext(
+        gene_symbol="NOSUCHGENE", molecular_defect="haploinsufficiency"))
+    halted = [r for r in out["results"] if r["status"] == MA.HALTED]
+    assert halted, "expected at least one halt with no gene features supplied"
+    for r in halted:
+        assert r["score"] is None, f"{r['id']} halted but reports a score"
+        assert r["applicability"] is None
+        assert r["confidence"] is None
+
+
+def test_gene_feature_client_retries():
+    """A single transient timeout used to make A3/A4 halt on every gene.
+
+    `_ensembl_request` had no retry: one read timeout returned None, which
+    marked TANGO/NAT unverified, which left F4/F6 unresolved, which halted
+    both mechanisms. Ensembl answers this lookup in about a second, so the
+    failures were transient.
+    """
+    import services.gene_feature_service as G
+    assert G.ENSEMBL_MAX_RETRIES >= 2, "the client must retry"
+    calls = {"n": 0}
+
+    class _Resp:
+        status_code = 200
+        @staticmethod
+        def json():
+            return {"id": "ENSG00000000001"}
+
+    def flaky(method, url, **kwargs):
+        calls["n"] += 1
+        if calls["n"] < 2:
+            import requests
+            raise requests.Timeout("read timed out")
+        return _Resp()
+
+    import requests as _requests
+    original = _requests.request
+    G.requests.request = flaky
+    try:
+        out = G._ensembl_get("/lookup/id/ENSG00000000001")
+    finally:
+        G.requests.request = original
+    assert out == {"id": "ENSG00000000001"}, "a retryable timeout was not retried"
+    assert calls["n"] == 2
+
+
+def test_a3_a4_score_from_fetched_features_not_an_asserted_defect():
+    """SCN1A has a poison exon and an antisense transcript; both are fetchable.
+
+    The endpoint used to pass `payload.gene_features` straight through, so a
+    caller that sent none left F4 and F6 unresolved and both mechanisms
+    halted — the platform never checked whether the gene actually has these
+    features, it only believed the user's defect selection.
+    """
+    import logging
+    logging.disable(logging.WARNING)
+    from fastapi.testclient import TestClient
+    from main import app
+    client = TestClient(app)
+    resp = client.post("/api/mechanisms/gene-upregulation", json={
+        "gene_symbol": "SCN1A", "defect_type": "haploinsufficiency"})
+    assert resp.status_code == 200
+    by_id = {m["id"]: m for m in resp.json()["results"]}
+    for mech in ("A3", "A4"):
+        assert mech in by_id, f"{mech} missing from the TG02 ranking"
+        if by_id[mech]["status"] == "HALTED":
+            pytest.skip("Ensembl unavailable; the fetched-feature path cannot "
+                        "be exercised offline")
+        assert by_id[mech]["score"] is not None
+
+
+def test_gene_feature_payload_shape_is_normalised():
+    """`gene_feature()` reads payload["features"][key]; the inner dict alone
+    silently resolves nothing, which is an easy call-site mistake."""
+    from api.mechanisms import _resolve_gene_features
+    inner = {"NAT": {"available": True, "verified": True, "reason": "x"}}
+    assert _resolve_gene_features("X", inner)["features"] == inner
+    whole = {"features": inner, "source": "live"}
+    assert _resolve_gene_features("X", whole) == whole

@@ -808,10 +808,18 @@ def _score_mechanism(
 
     contributing = required + forbidden
     lower, upper = applicability_interval(required, forbidden)
-    # A flagged mechanism is not scored, so it must not carry a score-shaped
-    # number. The vacuous [1.0, 1.0] an empty interval produces reads as
-    # "perfectly applicable" — the opposite of what FLAGGED means.
-    scored_at_all = status != FLAGGED
+    # A mechanism that is not scored must not carry a score-shaped number.
+    # The vacuous [1.0, 1.0] an empty interval produces reads as "perfectly
+    # applicable", which is the opposite of what these states mean.
+    #
+    # HALTED belongs here alongside FLAGGED and was leaking. A halt happens
+    # precisely because a REQUIRED feature is unresolved — the mechanism is
+    # unassessable — and the response was still reporting
+    # `score: 1.0, applicability: [1.0, 1.0]`. A reader who sorts on score, or
+    # who glances at the number rather than the status, is told the opposite
+    # of the truth about the one mechanism the system just admitted it cannot
+    # evaluate.
+    scored_at_all = status not in (FLAGGED, HALTED)
 
     evidence_cap = _evidence_cap(rule)
     provenance_cap = min(
@@ -1078,9 +1086,14 @@ def _sort_key(result: dict) -> tuple:
     beat a genuinely better-evidenced mechanism, and applicability can never
     promote a mechanism that failed a gate.
     """
+    # HALTED and FLAGGED carry no applicability — they are the states where
+    # the system has said it cannot assess the mechanism. They sort by status
+    # rank alone; 0.0 here only keeps the tuple well-formed and never mixes
+    # them in among the scored results, because status is the first key.
+    applicability = result.get("applicability") or {}
     return (
         _STATUS_RANK.get(result["status"], 9),
-        -result["applicability"]["upper"],
+        -(applicability.get("upper") or 0.0),
         -result["evidenceWeight"],
         -DELIVERY_TIER_WEIGHT.get(result.get("deliveryTier") or "unestablished", 0),
         result["id"],
