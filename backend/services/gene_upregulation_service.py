@@ -256,6 +256,44 @@ def generate_upregulation_candidates(
     seq = target["mrnaSequence"].upper()
     seq_len = len(seq)
     exons = target["exons"]
+    # A3 and A4 do not target the canonical mRNA and cannot be served by the
+    # tiler below.
+    #
+    # A poison exon is SKIPPED in the productive transcript, so it is absent
+    # from the canonical mRNA by definition — tiling that mRNA can never reach
+    # it. The old path set the label "Exon junctions" and scanned the whole
+    # transcript, returning 891 candidates across all 29 SCN1A exon junctions,
+    # none aimed at the poison exon.
+    #
+    # A NAT is a different gene on the opposite strand. The old path tiled the
+    # whole sense transcript as "Full transcript (NAT complement)"; the strand
+    # was right, but SCN1A-AS1 overlaps only part of SCN1A, so candidates
+    # outside the overlap were complementary to nothing.
+    if mechanism_id in ("A3", "A4"):
+        from services.upregulation_targets_service import (
+            design_nat_knockdown, design_poison_exon_block,
+        )
+        gene_id = target.get("geneId") or ensembl_gene_id
+        if mechanism_id == "A3":
+            payload = design_poison_exon_block(
+                gene_id, gene_symbol=gene_symbol, organism=organism,
+                oligo_length=aso_length)
+        else:
+            payload = design_nat_knockdown(
+                gene_id, gene_symbol=gene_symbol, organism=organism,
+                oligo_length=aso_length)
+        # This function's contract is a list of candidates. The located target
+        # (which poison exon, which NAT, and the alternatives) is attached to
+        # each candidate so the caller keeps it without changing the shape.
+        located = {k: v for k, v in payload.items() if k != "candidates"}
+        for cand in payload["candidates"]:
+            cand["mechanismNotes"] = payload.get("architecture", "")
+            cand["targetLocated"] = located
+        if not payload["candidates"]:
+            raise ValueError(payload.get("message") or
+                             f"{mechanism_id}: no target could be located.")
+        return payload["candidates"]
+
     design = UPREGULATION_MECHANISM_DESIGN[mechanism_id]
 
     # Override length for saRNA

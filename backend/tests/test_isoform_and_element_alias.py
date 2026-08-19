@@ -635,3 +635,64 @@ def test_gene_feature_payload_shape_is_normalised():
     assert _resolve_gene_features("X", inner)["features"] == inner
     whole = {"features": inner, "source": "live"}
     assert _resolve_gene_features("X", whole) == whole
+
+
+def test_a3_targets_a_poison_exon_not_every_junction():
+    """A poison exon is absent from the canonical mRNA by definition.
+
+    The old path set the label "Exon junctions" and tiled the whole
+    transcript, returning 891 candidates across all 29 SCN1A exon junctions —
+    none aimed at the exon the mechanism is named for. It could not work from
+    the canonical mRNA at all, because the exon is skipped there.
+    """
+    from services.upregulation_targets_service import (
+        MAX_POISON_EXON_NT, design_poison_exon_block, find_poison_exons,
+    )
+    located = find_poison_exons("ENSG00000144285")
+    if located["status"] != "OK":
+        pytest.skip("Ensembl unavailable")
+    assert located["nmdTranscriptCount"] > 0
+    for exon in located["poisonExons"]:
+        assert exon["length"] <= MAX_POISON_EXON_NT
+        assert exon["supportingTranscripts"]
+    # SCN1A's clinically targeted poison exon (20N, the STK-001 target) is
+    # 64 nt and must be among those located.
+    lengths = [e["length"] for e in located["poisonExons"]]
+    assert 64 in lengths, f"SCN1A's 64 nt poison exon not located: {lengths}"
+
+    out = design_poison_exon_block("ENSG00000144285", gene_symbol="SCN1A",
+                                   oligo_length=20)
+    assert out["status"] == "OK"
+    assert 0 < len(out["candidates"]) <= 12, "candidate count must be capped"
+    exon = out["poisonExon"]
+    for c in out["candidates"]:
+        assert "poison exon" in c["targetElement"]
+        assert (abs(c["genomicStart"] - exon["start"]) < 5000
+                or abs(c["genomicStart"] - exon["end"]) < 5000)
+
+
+def test_a4_targets_the_nat_overlap_not_the_whole_transcript():
+    """The NAT is a different gene, and it overlaps only part of this one."""
+    from services.upregulation_targets_service import (
+        design_nat_knockdown, find_nat,
+    )
+    located = find_nat("ENSG00000144285")
+    if located["status"] != "OK":
+        pytest.skip("Ensembl unavailable")
+    symbols = {n.get("symbol") for n in located["nats"]}
+    assert "SCN1A-AS1" in symbols, f"SCN1A's antisense gene not found: {symbols}"
+    for nat in located["nats"]:
+        assert nat["overlapNt"] > 0
+
+    out = design_nat_knockdown("ENSG00000144285", gene_symbol="SCN1A",
+                               oligo_length=20)
+    assert out["status"] == "OK"
+    assert 0 < len(out["candidates"]) <= 12
+    nat = out["nat"]
+    for c in out["candidates"]:
+        # Confined to the real overlap — the old code tiled the entire
+        # transcript, so candidates outside it were complementary to nothing.
+        assert nat["overlapStart"] <= c["genomicStart"] <= nat["overlapEnd"], (
+            f"candidate at {c['genomicStart']} is outside the "
+            f"{nat['overlapStart']}-{nat['overlapEnd']} NAT overlap")
+    assert "antisense to the gene" in out["strandNote"]
