@@ -820,6 +820,19 @@ def _score_mechanism(
     # of the truth about the one mechanism the system just admitted it cannot
     # evaluate.
     scored_at_all = status not in (FLAGGED, HALTED)
+    # The same leak, one status further on. A gate rejection is decided BEFORE
+    # any feature is collected (the required/forbidden loops below are all
+    # guarded by `status == ELIGIBLE`), so `contributing` is empty and the
+    # interval is the vacuous [1.0, 1.0]. Measured on SCN1A/haploinsufficiency:
+    # A5 and A28, both REJECTED on the defect gate, reported
+    # `score: 1.0, applicability: [1.0, 1.0]` — a HIGHER number than the two
+    # ELIGIBLE mechanisms in the same response (A3 and A4 at 0.9).
+    #
+    # A rejection on a genuinely ABSENT prerequisite is different: those
+    # features were collected, carry a real low probability, and their
+    # interval is a fact worth reporting. Only the vacuous case is suppressed.
+    if status == REJECTED and not contributing:
+        scored_at_all = False
 
     evidence_cap = _evidence_cap(rule)
     provenance_cap = min(

@@ -1,6 +1,6 @@
 # Repair status
 
-Branch `tg02-arbitration`. 125 passed, 2 skipped, 2 xfailed.
+Branch `tg02-arbitration`. 139 passed, 2 skipped, 2 xfailed.
 Read [CLAUDE.md](CLAUDE.md) first — it holds the working rules this file
 assumes.
 
@@ -24,6 +24,8 @@ out to have at least one defect.
 | **A2** steric translation block | no fix needed | Correctly separated from A1 by F10a/F10b; targets the 5′ initiation region; honest that no approved drug has this primary mechanism. |
 | **A3** poison-exon blocking | fixed | Could never have worked: a poison exon is absent from the canonical mRNA, which is what it was tiling. Now locates it from NMD-transcript exon diffs — finds SCN1A exon 20N (64 nt), the STK-001 target. |
 | **A4** AntagoNAT | fixed | Tiled the whole sense transcript; SCN1A-AS1 overlaps only part of it, so candidates outside the overlap bound nothing. Now confined to the real 198,166 nt overlap. |
+| **A5** uORF blocking | fixed | Two defects. Scoring: REJECTED on the defect gate yet reported `score: 1.0, applicability: [1.0, 1.0]` — above the ELIGIBLE A3/A4 at 0.9. Design: 69 uncapped candidates, 19 tied at exactly 100.0. Targeting was already correct (real 5' UTR). Now capped at 20 and ranked on accessibility. |
+| **A6** miRNA site blocking | fixed | Halts correctly on F7 (no TargetScan wired). Design had the same defects as A5: 635 uncapped candidates, 125 tied at exactly 100.0. Targeting was already correct (real 3' UTR). Now capped at 20 and ranked on accessibility; every window still marked `seedSiteStatus: unverified`. |
 
 ### Fixed but never individually probed — assume defects remain
 
@@ -31,7 +33,7 @@ out to have at least one defect.
 | --- | --- | --- |
 | A7–A11 (TG04) | U-alphabet fixes in `_calc_tm` / `_reverse_complement` | whether each mechanism targets its own geometry, or all five share one tiling |
 | A13, A16, A17, A20 (TG03) | mechanism/edit-type gate added | guide geometry per platform; bystander handling beyond A18/A19 |
-| A5, A6, A23, A28 (TG02) | none | **measured: the saturation and the missing cap both apply** — see the defect list below for the numbers |
+| A23, A28 (TG02) | cap + in-pool percentiles (shared tiler) | A5/A6 are now probed; A23/A28 inherit the cap and ranking change but were not individually audited. A28 is accessibility-ranked, A23 deliberately is not (promoter target, not mature mRNA). |
 | A12, A14 (TG05) | none | repeat-tract phase logic beyond the 3-candidate check |
 | A27, A29–A31 (TG06) | element alias fix | per-mechanism target regions |
 | A21, A18/A19, A32/A33 | built this session | only build-time probes; no independent review |
@@ -52,19 +54,21 @@ A test fails if any mechanism yields no candidates **and** no reason.
 
 ### Known defects, not yet fixed
 
-1. **Score saturation and no candidate cap in `gene_upregulation_service`**
-   for A5/A6/A23/A28 — measured on SCN1A at 20 nt:
+1. ~~Score saturation and no candidate cap in `gene_upregulation_service`.~~
+   **Fixed.** The tiler now caps at 20 (`UPREGULATION_MAX_CANDIDATES`),
+   carries `poolSize` / `shortlistedFrom` so a shortlist is not mistaken for
+   the whole search, and ranks A5/A6/A28 on ViennaRNA site accessibility with
+   the saturating composite demoted to a tie-break — the A1 fix, applied here.
+   Measured on SCN1A at 20 nt: A5 69 candidates -> 20, 19 tied at 100.0 -> 1;
+   A6 635 -> 20, 125 tied -> 4. Accessibility gives 280 distinct values across
+   the 5' UTR and 2,823 across the 3' UTR, against 38 and 101 for the
+   composite.
 
-   | mechanism | candidates | distinct scores | tied at exactly 100.0 |
-   | --- | ---: | ---: | ---: |
-   | A5 | 69 | 38 | 19 (28%) |
-   | A6 | 635 | 152 | 130 (20%) |
-   | A28 | 891 | 131 | 238 (27%) |
-
-   The same `_composite_score` clipping fixed in `gene_silencing_service`, and
-   the same unbounded candidate list A3/A4 had (A1 caps at 10, the rewritten
-   A3/A4 at 12). A3/A4 escaped both by being routed to a dedicated designer,
-   not by either bug being fixed.
+   Still open for A5/A6: ranking purely on accessibility favours unstructured
+   low-complexity tracts — the top A5 candidate on SCN1A is `CACACAGACACACAAACACA`,
+   a CA repeat. Complexity and off-target risk are computed and shown, but
+   deliberately not voted into the sort (CLAUDE.md 6 — no unvalidated ranking
+   term). Whether to filter these needs a measurement, not a constant.
 2. **`exon_cds_map` uses a proportional estimate** in
    `gene_upregulation_service` (`seq_len * exon.length / total_genomic`)
    rather than the real `cdsStart`/`cdsEnd`. `gene_silencing_service`
@@ -97,21 +101,23 @@ A test fails if any mechanism yields no candidates **and** no reason.
 
 Paste this, adjusted for the mechanism pair:
 
-> Read CLAUDE.md and STATUS.md. Working on **A5 and A6** only.
+> Read CLAUDE.md and STATUS.md. Working on **A7 and A8** only.
 >
 > Done means, and show me the output of each:
-> 1. `POST /api/mechanisms/gene-upregulation` returns them scored or halted
+> 1. `POST /api/mechanisms/rna-processing` returns them scored or halted
 >    with a stated reason.
-> 2. `POST /api/gene-upregulation/generate` returns ≤ 20 candidates whose
+> 2. `POST /api/rna-processing/generate` returns ≤ 20 candidates whose
 >    sequences derive from the region the mechanism actually targets — verify
 >    one by hand against the fetched transcript.
 > 3. `compositeScore` has more than one distinct value across the candidates.
-> 4. `python3 -m pytest backend/tests -q -k upregulation` passes.
+> 4. `python3 -m pytest backend/tests -q -k <goal-keyword>` passes —
+>    and **collects something**: `-k` matching nothing exits 5 and reads as a
+>    pass. TG02 had zero matching tests until `test_tg02_upregulation.py`.
 >
 > Write the probe before the fix. Add a regression test for anything you find.
 
 Suggested order — earlier pairs are the ones the platform leans on hardest:
-**A5/A6 → A7/A8 → A9/A10 → A11/A12 → A13/A14 → A15/A16 → A17/A18 →
+**A5/A6 (done) → A7/A8 → A9/A10 → A11/A12 → A13/A14 → A15/A16 → A17/A18 →
 A19/A20 → A21/A23 → A27/A28 → A29/A30 → A31/A32 → A33**.
 
 ---
@@ -124,7 +130,7 @@ Useful, but not on arbitrary pairs — the mechanisms share files.
 
 | session | files it owns |
 | --- | --- |
-| TG02 — A5, A6, A23, A28 | `gene_upregulation_service.py`, `upregulation_targets_service.py` |
+| TG02 — A5, A6, A23, A28 | `gene_upregulation_service.py`, `upregulation_targets_service.py`, `tests/test_tg02_upregulation.py` |
 | TG03 — A13, A16, A17, A20 | `rna_editing_service.py`, `programmable_editor_service.py` |
 | TG05 — A12, A14 | `rna_neutralization_service.py` |
 | TG06 — A27, A29–A31 | `translational_regulation_service.py` |

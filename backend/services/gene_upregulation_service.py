@@ -46,6 +46,8 @@ from services.gene_silencing_service import (
     _target_duplex_energy,
     _tm_fit_score,
     _composite_score,
+    _accessibility_profile_cached,
+    _percentile_rank,
     CHEMISTRY_OPTIONS,
     MODIFICATION_OPTIONS,
     LENGTH_RANGE,
@@ -69,6 +71,22 @@ UPREGULATION_CHEMISTRY_OPTIONS = [
 ]
 
 UPREGULATION_LENGTH_RANGE = {"min": 18, "max": 25, "default": 21, "step": 1}
+
+# A design request is a shortlist, not a tiling dump. Uncapped, this tiler
+# returned 69 candidates for A5 and 635 for A6 on SCN1A at 20 nt — the whole
+# 3' UTR at step size 6, with nothing to distinguish the 125 that tied at
+# exactly 100.0. A1 caps at 10 and the A3/A4 designer at 12; TG02 caps here.
+UPREGULATION_MAX_CANDIDATES = 20
+
+# Mechanisms whose candidates are steric blockers competing for a site on the
+# MATURE mRNA. For these, the oligo has to invade local secondary structure to
+# occupy its site, so ViennaRNA unpaired probability is a mechanistic
+# requirement and is used as the primary ranking axis (CLAUDE.md 6).
+#
+# A23 is deliberately NOT in this set: it targets promoter DNA / a
+# promoter-associated RNA, and folding genomic sequence as if it were the
+# mature transcript would be an accessibility number with no claim behind it.
+ACCESSIBILITY_RANKED_MECHANISMS = ("A5", "A6", "A28")
 
 UPREGULATION_MECHANISM_DESIGN = {
     "A3": {
@@ -354,6 +372,17 @@ def generate_upregulation_candidates(
 
     seen = set()
 
+    # Unpaired-probability profile over the region actually scanned, in ONE
+    # fold, keyed by the same offset the tiler uses. RNAplfold here is local
+    # (max_bp_span 150, window 200), so folding the isolated UTR matches its
+    # profile inside the full transcript except within ~200 nt of the splice
+    # to the CDS — the boundary caveat is stated on every candidate.
+    accessibility_profile = {}
+    if mechanism_id in ACCESSIBILITY_RANKED_MECHANISMS:
+        accessibility_profile = dict(
+            _accessibility_profile_cached(scan_seq, effective_length)
+        )
+
     # Build exon CDS mapping (same as gene_silencing_service)
     total_genomic = sum(e.get("length", 0) for e in exons)
     if total_genomic == 0:
@@ -473,6 +502,7 @@ def generate_upregulation_candidates(
             # Measured / computed properties — exact physics and sequence
             # computations, the tier that drives ranking.
             "realMetrics": {
+                "siteAccessibility": accessibility_profile.get(offset),
                 "targetDuplexEnergy": duplex_energy,
                 "meltingTempC": tm,
                 "selfStructureMfe": self_mfe,
@@ -533,11 +563,83 @@ def generate_upregulation_candidates(
             **tango_fields,
         })
 
-    # Sort by composite score (higher = better), with duplex ΔG as the
-    # tiebreaker — mirroring the TG01 ranking.
-    candidates.sort(
-        key=lambda c: (-c["compositeScore"], c["realMetrics"]["targetDuplexEnergy"])
-    )
+    # THE COMPOSITE SCORE SATURATES HERE FOR THE SAME REASON IT DID IN TG01.
+    #
+    # `_composite_score` maps duplex ΔG through `(-dg - 8) * 3.5` clipped at
+    # 100. Those constants suit oligos from 12 to 30 nt, but every candidate
+    # in one run is the SAME length, so the within-run spread is a few
+    # kcal/mol and most of it clips. Measured on SCN1A at 20 nt before this
+    # change: A5 returned 69 candidates, 19 of them tied at exactly 100.0;
+    # A6 returned 635, with 125 tied at exactly 100.0.
+    #
+    # Percentiles are taken within THIS pool, so they discriminate by
+    # construction rather than against an absolute constant that does not fit
+    # the run (CLAUDE.md 5, "rank within the pool").
+    acc_pool = [c["realMetrics"].get("siteAccessibility") for c in candidates]
+    dg_pool = [c["realMetrics"].get("targetDuplexEnergy") for c in candidates]
+    has_accessibility = any(v is not None for v in acc_pool)
+    for c in candidates:
+        rm = c["realMetrics"]
+        c["accessibilityPercentile"] = _percentile_rank(
+            rm.get("siteAccessibility"), acc_pool, higher_is_better=True)
+        c["duplexEnergyPercentile"] = _percentile_rank(
+            rm.get("targetDuplexEnergy"), dg_pool, higher_is_better=False)
+        if has_accessibility:
+            c["rankingBasis"] = {
+                "primary": "siteAccessibility (ViennaRNA unpaired probability)",
+                "tieBreak": "compositeScore, then duplex ΔG",
+                "caveat": (
+                    "A steric blocker has to occupy its site, so local "
+                    "accessibility is a mechanistic requirement — it is not a "
+                    "validated activity model, and no uORF or miRNA site here "
+                    "is itself validated. Duplex-ΔG-first ordering was "
+                    "measured below chance on 528 held-out experiments "
+                    "(backend/experiments/ml_analysis, E12), so it is a "
+                    "tie-break rather than the primary axis. The fold is "
+                    "local to the scanned region; sites within ~200 nt of its "
+                    "boundary may pair with sequence outside it."
+                ),
+            }
+        else:
+            c["rankingBasis"] = {
+                "primary": "compositeScore (duplex ΔG + Tm fit)",
+                "tieBreak": "duplex ΔG",
+                "caveat": (
+                    "No accessibility profile applies to this mechanism, so "
+                    "ranking falls back to the composite score. That score "
+                    "saturates when candidates share a length — read the "
+                    "percentiles, not the raw value."
+                ),
+            }
+
+    # Accessibility varies over orders of magnitude between sites on one
+    # transcript (measured on the SCN1A 3' UTR at 20 nt: 2,823 distinct values
+    # across 5,413 windows), which is why it leads and the saturating
+    # composite only breaks its ties.
+    if has_accessibility:
+        candidates.sort(
+            key=lambda c: (
+                -(c["realMetrics"].get("siteAccessibility") or 0.0),
+                -c["compositeScore"],
+                c["realMetrics"]["targetDuplexEnergy"],
+            )
+        )
+    else:
+        candidates.sort(
+            key=lambda c: (-c["compositeScore"],
+                           c["realMetrics"]["targetDuplexEnergy"])
+        )
+
+    # Report how much of the tiling the shortlist came from, so a capped list
+    # is never mistaken for the whole search.
+    total_before_cap = len(candidates)
+    candidates = candidates[:UPREGULATION_MAX_CANDIDATES]
+    for c in candidates:
+        c["poolSize"] = total_before_cap
+        c["shortlistedFrom"] = (
+            f"Top {len(candidates)} of {total_before_cap} windows tiled across "
+            f"{target_label}."
+        )
 
     return candidates
 

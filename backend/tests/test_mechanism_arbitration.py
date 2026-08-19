@@ -610,13 +610,29 @@ def test_flagged_mechanisms_stay_out_of_the_ranking():
     ranked = {r["id"] for r in out["results"]}
     flagged = {m["id"] for m in out["flaggedMechanisms"]}
     assert not (ranked & flagged)
-    # Everything that was actually assessed carries a score. HALTED does not:
-    # a halt means a required feature is unresolved, so the mechanism is
+    # Everything that was actually assessed carries a score. Two states do not.
+    #
+    # HALTED: a required feature is unresolved, so the mechanism is
     # unassessable and must not report `score: 1.0` from a vacuous interval.
+    #
+    # REJECTED on a gate: the gate is decided BEFORE any feature is collected,
+    # so the contributing set is empty and the interval is equally vacuous.
+    # Measured on this very context before the fix — CFTR / haploinsufficiency
+    # returned 25 gate-rejected mechanisms ALL reporting `score: 1.0`, above
+    # every eligible one. A rejection on a genuinely ABSENT prerequisite is
+    # different: those features were collected and their low number is a fact.
     for r in out["results"]:
-        if r["status"] == A.HALTED:
-            assert r["score"] is None, f"{r['id']} halted but reports a score"
+        contributing = r["features"]["required"] + r["features"]["forbidden"]
+        unassessable = (
+            r["status"] == A.HALTED
+            or (r["status"] == A.REJECTED and not contributing)
+        )
+        if unassessable:
+            assert r["score"] is None, (
+                f"{r['id']} is {r['status']} with nothing behind it but "
+                f"reports score {r['score']}")
             assert r["applicability"] is None
             assert r["confidence"] is None
+            assert r["rationale"], f"{r['id']} gives no reason"
         else:
             assert r["score"] is not None, f"{r['id']} was assessed but has no score"
