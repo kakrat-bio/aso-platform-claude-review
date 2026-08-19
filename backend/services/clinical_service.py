@@ -11,11 +11,14 @@ The service searches PubMed for clinical literature and extracts structured
 information using keyword-based pattern matching and sentence extraction.
 """
 
+import logging
 import re
 import xml.etree.ElementTree as ET
 from typing import Optional, List
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 NCBI_EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 HUMAN_FILTER = "humans[MeSH Terms] OR human[All Fields] OR patient[Title/Abstract]"
@@ -488,8 +491,40 @@ def _extract_therapy_terms(
     )
 
 
+def _gene_linked_pmids(gene_id: Optional[str], retmax: int = 15) -> list:
+    """PubMed ids NCBI has curated as being about this gene record.
+
+    Uses elink from db=gene to db=pubmed. Unlike a free-text symbol search
+    this cannot return a homonym: the link is to the gene record, not to the
+    letters of its symbol.
+    """
+    if not gene_id:
+        return []
+    try:
+        resp = requests.get(
+            f"{NCBI_EUTILS}/elink.fcgi",
+            params={
+                "dbfrom": "gene",
+                "db": "pubmed",
+                "id": str(gene_id),
+                "retmode": "json",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        linksets = resp.json().get("linksets", [])
+        for ls in linksets:
+            for db in ls.get("linksetdbs", []):
+                if db.get("dbto") == "pubmed":
+                    return [str(x) for x in db.get("links", [])][:retmax]
+    except Exception as exc:
+        logger.warning("Gene->PubMed elink failed for %s: %s", gene_id, exc)
+    return []
+
+
 def _get_gene_summary(gene_symbol: str) -> dict:
-    result = {"summary": None, "omim_id": None, "description": None}
+    result = {"summary": None, "omim_id": None, "description": None,
+              "gene_id": None, "full_name": None}
     try:
         resp = requests.get(
             f"{NCBI_EUTILS}/esearch.fcgi",
@@ -520,6 +555,8 @@ def _get_gene_summary(gene_symbol: str) -> dict:
                 continue
             result["summary"] = data.get("summary")
             result["description"] = data.get("description")
+            result["gene_id"] = str(gid)
+            result["full_name"] = data.get("description")
             mim = data.get("mim")
             if mim and isinstance(mim, list) and mim:
                 result["omim_id"] = str(mim[0])
@@ -814,17 +851,20 @@ def get_clinical_details(
         if result["clinicalSymptoms"] and result["diagnosticTests"] and result["therapeuticOptions"]:
             break
 
-    # Fallback: search by gene symbol + clinical keywords when no disease terms
-    # or when data is still missing. This ensures every gene gets some clinical data.
+    # Fallback when the disease-term search came up short.
+    #
+    # This used to be `"{gene_symbol}"[Title/Abstract] AND (clinical terms)`,
+    # with the comment "ensures every gene gets some clinical data". A bare
+    # symbol is ambiguous in free text, and the search happily returned it:
+    # HTT matched "hyalinizing trabecular tumours (HTTs) of the thyroid", so
+    # huntingtin's clinical panel filled with thyroid-neoplasm diagnostics and
+    # therapies. Filling a gap with a homonym is worse than leaving it empty.
+    #
+    # NCBI's curated Gene -> PubMed link is the disambiguated route: it returns
+    # papers indexed against THIS gene record, so no amount of abbreviation
+    # collision can leak in.
     if not result["clinicalSymptoms"] or not result["diagnosticTests"]:
-        gene_query = (
-            f'"{gene_symbol}"[Title/Abstract] AND '
-            "(genetic testing[Title/Abstract] OR diagnosis[Title/Abstract] OR "
-            "clinical features[Title/Abstract] OR phenotype[Title/Abstract] OR "
-            "mutation analysis[Title/Abstract] OR sequencing[Title/Abstract]) AND "
-            f"({HUMAN_FILTER})"
-        )
-        pmids = _ncbi_search(gene_query, retmax=15)
+        pmids = _gene_linked_pmids(gene_info.get("gene_id"), retmax=15)
         abstract_text = _ncbi_fetch_abstracts(pmids)
         if abstract_text:
             if not result["clinicalSymptoms"]:

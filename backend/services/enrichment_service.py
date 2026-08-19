@@ -1,6 +1,8 @@
 """Live enrichment and interaction summaries for the target dashboard."""
 
 import re
+
+import RNA
 import time
 import logging
 from typing import Optional
@@ -282,6 +284,62 @@ def _compute_codon_usage_bias(cds_seq: str) -> Optional[str]:
         return f"GC3={gc3_pct}% (Low, AT-rich)"
 
 
+# Accessibility is capped at this many nucleotides. A full sliding-window
+# partition function over a 9.4 kb CDS costs about 5 s; the cap keeps a gene
+# lookup responsive, and the reported value says how much was folded.
+ACCESSIBILITY_MAX_NT = 4000
+ACCESSIBILITY_WINDOW_NT = 20
+# The same unpaired-probability threshold the design layer uses to call a
+# site accessible (services/feature_service.ACCESSIBLE_SITE_THRESHOLD).
+ACCESSIBLE_SITE_THRESHOLD = 0.05
+
+
+def _real_accessibility(seq: str) -> Optional[str]:
+    """Fraction of 20-nt windows that are actually unpaired, from ViennaRNA.
+
+    This used to be `100 - gc_pct + 20`, a straight line through GC content
+    presented as a percentage accessibility — and it read high exactly where
+    a structured GC-poor transcript would be hard to hit. On HTT it claimed
+    "67% (Favorable)"; the real sliding-window partition function puts the
+    mean 20-nt unpaired probability at 0.0019, i.e. the CDS is almost
+    entirely paired. The two disagree by three orders of magnitude and by
+    the qualitative call.
+
+    Computed with RNA.probs_window (RNAplfold), which is linear in sequence
+    length, rather than a full O(n^3) fold.
+    """
+    if not seq:
+        return None
+    rna = seq.upper().replace("T", "U")[:ACCESSIBILITY_MAX_NT]
+    if len(rna) < ACCESSIBILITY_WINDOW_NT * 2:
+        return None
+    values: list[float] = []
+
+    def _collect(v, size, i, maxsize, what, data):
+        if what & RNA.PROBS_WINDOW_UP and v is not None:
+            if len(v) > ACCESSIBILITY_WINDOW_NT and v[ACCESSIBILITY_WINDOW_NT] is not None:
+                values.append(float(v[ACCESSIBILITY_WINDOW_NT]))
+
+    try:
+        md = RNA.md()
+        md.max_bp_span = 150
+        md.window_size = 200
+        fc = RNA.fold_compound(rna, md, RNA.OPTION_WINDOW)
+        fc.probs_window(ACCESSIBILITY_WINDOW_NT, RNA.PROBS_WINDOW_UP, _collect, None)
+    except Exception as exc:
+        logger.warning("Accessibility fold failed: %s", exc)
+        return None
+    if not values:
+        return None
+
+    open_frac = sum(1 for v in values if v >= ACCESSIBLE_SITE_THRESHOLD) / len(values)
+    pct = open_frac * 100
+    label = "Favorable" if pct >= 20 else "Moderate" if pct >= 5 else "Challenging"
+    scope = "" if len(seq) <= ACCESSIBILITY_MAX_NT else f", first {ACCESSIBILITY_MAX_NT} nt"
+    return (f"{pct:.1f}% of {ACCESSIBILITY_WINDOW_NT}-nt windows accessible "
+            f"(P(unpaired) >= {ACCESSIBLE_SITE_THRESHOLD}{scope}) ({label})")
+
+
 def _compute_aso_metrics_from_sequence(seq: str, result: dict) -> None:
     if not seq:
         return
@@ -290,19 +348,18 @@ def _compute_aso_metrics_from_sequence(seq: str, result: dict) -> None:
 
     result["codonUsageBias"] = _compute_codon_usage_bias(seq)
 
-    gc_pct = _gc_content(seq) if seq_len > 0 else 50
-    accessibility = max(0, min(100, 100 - gc_pct + 20))
-    if accessibility >= 60:
-        result["structuralAccessibility"] = f"{accessibility:.0f}% (Favorable)"
-    elif accessibility >= 45:
-        result["structuralAccessibility"] = f"{accessibility:.0f}% (Moderate)"
-    else:
-        result["structuralAccessibility"] = f"{accessibility:.0f}% (Challenging)"
+    result["structuralAccessibility"] = _real_accessibility(seq)
 
+    # ESE/ESS motifs are written in the RNA alphabet, and `seq` arrives from
+    # Ensembl as cDNA in the DNA alphabet. Matching one against the other
+    # silently dropped every pattern containing a U: on HTT that meant 0 of 5
+    # silencer motifs ever matched and only 3 of 5 enhancers did, reporting
+    # 49.5/kb where the real density is 105.4/kb. Normalise first.
+    rna = seq.replace("T", "U")
     ese_patterns = re.compile(r"(CUG|GAA|GAC|UGC|AGG)")
     ess_patterns = re.compile(r"(UCUU|CUAG|UUAG|CUCU|UGCA)")
-    ese_count = len(ese_patterns.findall(seq))
-    ess_count = len(ess_patterns.findall(seq))
+    ese_count = len(ese_patterns.findall(rna))
+    ess_count = len(ess_patterns.findall(rna))
     total_motifs = ese_count + ess_count
     motif_density = (total_motifs / seq_len) * 1000 if seq_len > 0 else 0
     if motif_density > 50:
@@ -456,11 +513,20 @@ def get_aso_analysis(ensembl_gene_id: str, taxon_id: int) -> dict:
             result["activeIsoforms"] = len(coding) if coding else (len(transcripts) or None)
 
             if len(transcripts) > 1:
-                exon_sets = set()
-                for t in transcripts:
-                    exons = t.get("Exon", [])
-                    exon_sets.add(len(exons))
-                result["spliceSwitches"] = max(0, len(exon_sets) - 1)
+                # Was `len({len(exons) for t in transcripts}) - 1`: the number
+                # of distinct exon COUNTS minus one. Two transcripts using
+                # completely different exons collapsed to one value if they
+                # happened to have the same number of them, and two identical
+                # structures counted as one "switch" apart if they did not.
+                # Compare the actual exon boundaries instead, so this counts
+                # distinct spliced structures.
+                structures = {
+                    tuple(sorted((e.get("start"), e.get("end"))
+                                 for e in (t.get("Exon") or [])))
+                    for t in transcripts
+                }
+                structures.discard(())
+                result["spliceSwitches"] = max(0, len(structures) - 1)
 
             n_coding = len(coding) if coding else 0
             if n_coding > 0:
