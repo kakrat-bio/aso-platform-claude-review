@@ -31,7 +31,7 @@ out to have at least one defect.
 | --- | --- | --- |
 | A7–A11 (TG04) | U-alphabet fixes in `_calc_tm` / `_reverse_complement` | whether each mechanism targets its own geometry, or all five share one tiling |
 | A13, A16, A17, A20 (TG03) | mechanism/edit-type gate added | guide geometry per platform; bystander handling beyond A18/A19 |
-| A5, A6, A23, A28 (TG02) | none | **still on the generic tiler, so the 100.0 saturation that hit A3/A4 almost certainly applies** (inferred from the shared code path, not measured) |
+| A5, A6, A23, A28 (TG02) | none | **measured: the saturation and the missing cap both apply** — see the defect list below for the numbers |
 | A12, A14 (TG05) | none | repeat-tract phase logic beyond the 3-candidate check |
 | A27, A29–A31 (TG06) | element alias fix | per-mechanism target regions |
 | A21, A18/A19, A32/A33 | built this session | only build-time probes; no independent review |
@@ -52,10 +52,19 @@ A test fails if any mechanism yields no candidates **and** no reason.
 
 ### Known defects, not yet fixed
 
-1. **Score saturation in `gene_upregulation_service`** for A5/A6/A23/A28. The
-   same `_composite_score` clipping fixed in `gene_silencing_service`. A3/A4
-   escaped it by being routed to a dedicated designer, not by the bug being
-   fixed.
+1. **Score saturation and no candidate cap in `gene_upregulation_service`**
+   for A5/A6/A23/A28 — measured on SCN1A at 20 nt:
+
+   | mechanism | candidates | distinct scores | tied at exactly 100.0 |
+   | --- | ---: | ---: | ---: |
+   | A5 | 69 | 38 | 19 (28%) |
+   | A6 | 635 | 152 | 130 (20%) |
+   | A28 | 891 | 131 | 238 (27%) |
+
+   The same `_composite_score` clipping fixed in `gene_silencing_service`, and
+   the same unbounded candidate list A3/A4 had (A1 caps at 10, the rewritten
+   A3/A4 at 12). A3/A4 escaped both by being routed to a dedicated designer,
+   not by either bug being fixed.
 2. **`exon_cds_map` uses a proportional estimate** in
    `gene_upregulation_service` (`seq_len * exon.length / total_genomic`)
    rather than the real `cdsStart`/`cdsEnd`. `gene_silencing_service`
