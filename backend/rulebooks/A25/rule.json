@@ -70,6 +70,6 @@
     "discriminatingFeatures": [],
     "designAvailable": false,
     "designUnavailableReason": "Requires structure-based selection (SELEX), not antisense complementarity.",
-    "flagReason": "Pegaptanib is a real approved drug, but aptamer design shares almost no logic with the sequence designer and TG09 contains one mechanism — a ranking over a single item is not a ranking. Surfaced qualitatively instead of scored."
+    "flagReason": "Pegaptanib is a real approved drug, but an aptamer's sequence is the output of SELEX against the target protein, not of sequence design against a transcript. Kd, specificity and fold are properties of the selected aptamer, so there is nothing here to rank on that would not be invented. Surfaced qualitatively instead of scored."
   }
 }

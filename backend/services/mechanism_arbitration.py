@@ -342,10 +342,22 @@ RETIRED_AS_SCORING_PARTITION = {
         "protein replacement, not vaccination (SO-TG-10)."
     ),
     "TG09": (
-        "Flag only, not scored: TG09 contains one mechanism (A25), and a "
-        "ranking over a single item is not a ranking. Surfaced qualitatively "
-        "when no transcript-acting silencing mechanism is viable and the "
-        "target protein is extracellular or cell-surface."
+        # The original wording — "TG09 contains one mechanism (A25), and a "
+        # ranking over a single item is not a ranking" — was true when A25
+        # stood alone. The docx expansion added A37, A38 and A39, so that
+        # justification stopped holding while the text stayed put. The reason
+        # to flag rather than score was never really the count: it is that an
+        # aptamer's sequence comes out of SELEX, so the platform has nothing
+        # of its own to rank these on.
+        "Flag only, not scored. TG09's four mechanisms (A25, A37, A38, A39) "
+        "are all aptamer-based, and an aptamer's sequence is the output of "
+        "SELEX against the target protein — an in vitro selection this "
+        "platform does not run. Every quantity a ranking would need (Kd, "
+        "fold, specificity) is a property of the selected aptamer, not of "
+        "anything derivable from the transcript, so scoring them would be "
+        "ranking on invented numbers. Surfaced qualitatively when no "
+        "transcript-acting silencing mechanism is viable and the target "
+        "protein is extracellular or cell-surface."
     ),
 }
 

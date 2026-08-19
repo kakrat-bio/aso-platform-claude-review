@@ -226,3 +226,86 @@ def test_scorecard_excludes_sequence_independent_constants():
                                                      "nucleosideMod"}
     # overallScore must now move with the sequence.
     assert a["overallScore"] != b["overallScore"]
+
+
+# ---------------------------------------------------------------------------
+# TG08 protein replacement
+# ---------------------------------------------------------------------------
+
+def test_protein_replacement_rejects_unknown_choices():
+    """Unknown enum values used to fall through and be designed as `linear`."""
+    from services.protein_replacement_service import (
+        VALID_RNA_MODALITIES, generate_protein_replacement_candidates,
+    )
+    base = dict(target_symbol="CFTR", rna_modality="linear",
+                codon_strategy="cai", utr_pair="globin",
+                ires_selection=None, nucleotide_modification="m1psi")
+    for field, bad in (("rna_modality", "NONSENSE"),
+                       ("codon_strategy", "BOGUS"),
+                       ("utr_pair", "FAKE"),
+                       ("nucleotide_modification", "INVALID")):
+        with pytest.raises(ValueError) as exc:
+            generate_protein_replacement_candidates(**{**base, field: bad})
+        assert field in str(exc.value)
+    assert "any" in VALID_RNA_MODALITIES
+
+
+def test_protein_replacement_utrs_come_from_the_working_endpoint(monkeypatch):
+    """`?type=utr5` is a 400 from Ensembl; the UTRs must come via cDNA/CDS.
+
+    The old implementation asked for `/sequence/id/{tx}?type=utr5`, which
+    Ensembl answers with `{"error":"The type 'utr5' is not understood by this
+    service"}`. It therefore returned None for every gene and every construct
+    was emitted with `utrSource: "absent"`.
+    """
+    from services import protein_replacement_service as prs
+
+    calls: list[str] = []
+
+    def fake_target(gene_id, gene_symbol="", organism="homo_sapiens"):
+        calls.append(gene_symbol or gene_id)
+        return {
+            "utr5Sequence": "GCCACCATGG" * 7,
+            "utr3Sequence": "TTTATTTAAA" * 20,
+            "canonicalTranscript": {"id": "ENST00000003084.11"},
+        }
+
+    monkeypatch.setattr(prs, "get_target_analysis", fake_target)
+    out = prs._fetch_real_utrs("CFTR")
+    assert out is not None, "UTR lookup returned nothing"
+    assert len(out["utr5"]) == 70
+    assert len(out["utr3"]) == 200
+    assert out["transcript_id"] == "ENST00000003084"
+    assert calls, "did not go through get_target_analysis"
+
+
+def _string_constants_in_code(path: pathlib.Path) -> list[str]:
+    """Every string constant that reaches executable code, docstrings removed."""
+    tree = ast.parse(path.read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef,
+                             ast.AsyncFunctionDef)) and node.body:
+            first = node.body[0]
+            if (isinstance(first, ast.Expr)
+                    and isinstance(first.value, ast.Constant)
+                    and isinstance(first.value.value, str)):
+                node.body = node.body[1:] or [ast.Pass()]
+    return [n.value for n in ast.walk(tree)
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+
+
+def test_protein_replacement_source_has_no_utr_type_request():
+    """Guard against the unsupported Ensembl parameter coming back.
+
+    Checked over string constants with docstrings stripped — the docstring
+    explaining why `type=utr5` is wrong necessarily contains it.
+    """
+    from services import protein_replacement_service as prs
+    constants = _string_constants_in_code(pathlib.Path(prs.__file__))
+    for bad in ("type=utr5", "type=utr3"):
+        offenders = [c for c in constants if bad in c]
+        assert not offenders, (
+            f"{bad} is an unsupported Ensembl sequence type and returns "
+            f"HTTP 400; use the cDNA/CDS alignment instead. Found in: "
+            f"{offenders}"
+        )

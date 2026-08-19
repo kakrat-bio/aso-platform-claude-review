@@ -376,46 +376,39 @@ def _evaluate_utr_structure(utr5_sequence: str) -> dict:
 def _fetch_real_utrs(gene_symbol: str, organism: str = "homo_sapiens") -> dict | None:
     """Real 5' and 3' UTR sequences for the canonical transcript.
 
-    Ensembl exposes them directly via /sequence/id/{transcript}?type=utr5 and
-    type=utr3, so there is no reason to construct them. Returns None when the
-    lookup cannot answer, which the caller turns into an explicit
-    "unavailable" rather than a substitute.
-    """
-    lookup = _ensembl_get(
-        f"{ENSEMBL_REST}/lookup/symbol/{organism}/{gene_symbol}?expand=1",
-        timeout=10,
-    )
-    if not lookup or not getattr(lookup, "ok", False):
-        return None
-    data = lookup.json()
-    transcript_id = data.get("canonical_transcript") or ""
-    transcript_id = transcript_id.split(".")[0]
-    if not transcript_id:
-        for t in data.get("Transcript", []):
-            if t.get("is_canonical") or t.get("biotype") == "protein_coding":
-                transcript_id = t.get("id", "")
-                break
-    if not transcript_id:
-        return None
+    THIS USED TO ALWAYS RETURN None. It requested
+    `/sequence/id/{transcript}?type=utr5` and `?type=utr3`, and its docstring
+    asserted that Ensembl exposes UTRs that way. Ensembl does not: those calls
+    return HTTP 400, `{"error":"The type 'utr5' is not understood by this
+    service"}`. The valid types are genomic, cds, cdna and protein. So the
+    lookup failed silently on every gene, `_resolve_transcript_parts` recorded
+    no UTRs, and every TG08 construct was emitted with `utrSource: "absent"`
+    and zero-length UTRs — for CFTR, whose 70 nt 5' UTR and 1,557 nt 3' UTR
+    Ensembl serves perfectly well.
 
-    out: dict = {"transcript_id": transcript_id, "assembly": data.get("assembly_name")}
-    for kind, key in (("utr5", "utr5"), ("utr3", "utr3")):
-        resp = _ensembl_get(
-            f"{ENSEMBL_REST}/sequence/id/{transcript_id}?type={kind}",
-            timeout=10,
-        )
-        if resp is not None and getattr(resp, "ok", False):
-            payload = resp.json()
-            seq = ""
-            if isinstance(payload, list) and payload:
-                seq = payload[0].get("seq", "")
-            elif isinstance(payload, dict):
-                seq = payload.get("seq", "")
-            if seq:
-                out[key] = seq.upper()
-    # A transcript with neither UTR annotated is not a usable answer.
-    if not out.get("utr5") and not out.get("utr3"):
+    The UTRs are recovered the way Ensembl actually supports: fetch the cDNA
+    and the CDS, find where the CDS sits inside the cDNA, and take the prefix
+    and suffix. `gene_silencing_service.get_target_analysis` already does that
+    alignment (`_fetch_cdna_with_cds_offset`) and is already imported here, so
+    this delegates to it rather than duplicating the arithmetic.
+    """
+    target = get_target_analysis(gene_symbol, gene_symbol=gene_symbol,
+                                 organism=organism)
+    if not target:
         return None
+    utr5 = (target.get("utr5Sequence") or "").upper()
+    utr3 = (target.get("utr3Sequence") or "").upper()
+    if not utr5 and not utr3:
+        # A transcript with neither UTR annotated is not a usable answer.
+        return None
+    out: dict = {}
+    if utr5:
+        out["utr5"] = utr5
+    if utr3:
+        out["utr3"] = utr3
+    canonical = target.get("canonicalTranscript") or {}
+    if isinstance(canonical, dict) and canonical.get("id"):
+        out["transcript_id"] = str(canonical["id"]).split(".")[0]
     return out
 
 
@@ -449,6 +442,35 @@ def _resolve_transcript_parts(symbol: str, organism: str) -> dict:
     )
 
 
+# The design vocabularies, kept next to the generator so validation cannot
+# drift from what `get_protein_replacement_options` advertises. There was no
+# validation at all before: `rna_modality="NONSENSE"` fell through the
+# membership tests below, hit the `if not modalities` guard, and was silently
+# designed as a linear construct — the caller got a 200 and a plausible
+# candidate for an architecture they had not asked for.
+VALID_RNA_MODALITIES = {"linear", "circrna", "sarna", "any"}
+VALID_CODON_STRATEGIES = {"cai", "mfe", "uridine"}
+VALID_UTR_PAIRS = {"globin", "c3", "synthetic"}
+VALID_IRES_SELECTIONS = {"cvb3", "ev71", "m6a"}
+VALID_NUCLEOTIDE_MODIFICATIONS = {"m1psi", "5mc_psi", "unmodified"}
+
+
+def _validate_choice(value: str | None, allowed: set[str], field: str,
+                     required: bool = True) -> str | None:
+    if value is None or value == "":
+        if required:
+            raise ValueError(f"{field} is required (one of "
+                             f"{', '.join(sorted(allowed))}).")
+        return None
+    key = str(value).strip().lower()
+    if key not in allowed:
+        raise ValueError(
+            f"Unknown {field}: {value!r}. Expected one of "
+            f"{', '.join(sorted(allowed))}."
+        )
+    return key
+
+
 def generate_protein_replacement_candidates(
     target_symbol: str,
     rna_modality: str,
@@ -459,6 +481,17 @@ def generate_protein_replacement_candidates(
     organism: str = "homo_sapiens",
 ) -> dict[str, Any]:
     """Generate ranked protein replacement construct candidates."""
+    rna_modality = _validate_choice(rna_modality, VALID_RNA_MODALITIES,
+                                    "rna_modality")
+    codon_strategy = _validate_choice(codon_strategy, VALID_CODON_STRATEGIES,
+                                      "codon_strategy")
+    utr_pair = _validate_choice(utr_pair, VALID_UTR_PAIRS, "utr_pair")
+    nucleotide_modification = _validate_choice(
+        nucleotide_modification, VALID_NUCLEOTIDE_MODIFICATIONS,
+        "nucleotide_modification")
+    ires_selection = _validate_choice(ires_selection, VALID_IRES_SELECTIONS,
+                                      "ires_selection", required=False)
+
     symbol = target_symbol.strip().upper()
     if not symbol:
         raise ValueError("target_symbol is required")
