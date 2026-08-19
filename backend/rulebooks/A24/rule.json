@@ -62,8 +62,13 @@
     "requiredFeatures": [],
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
-    "designAvailable": false,
-    "designUnavailableReason": "Requires codon optimisation, UTR design, and cap/polyA selection.",
-    "flagReason": "No approved mRNA protein replacement therapy exists, so a stated applicability for this mechanism could not be checked against any case in the world. Surfaced qualitatively instead of scored."
+    "designAvailable": true,
+    "designUnavailableReason": null,
+    "flagReason": "No approved mRNA protein replacement therapy exists, so a stated applicability for this mechanism could not be checked against any case in the world. Surfaced qualitatively instead of scored.",
+    "designRoute": {
+      "endpoint": "/api/protein-replacement/generate",
+      "rnaModality": "linear",
+      "note": "Linear IVT mRNA — the `linear` architecture of /api/protein-replacement/generate"
+    }
   }
 }

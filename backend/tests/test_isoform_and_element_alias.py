@@ -347,6 +347,7 @@ def test_every_designable_mechanism_has_a_designer():
         NEUTRALIZATION_MECHANISM_CHEMISTRY,
     )
     from services.rna_editing_service import EDITING_MECHANISM_EDIT_TYPES
+    from services.programmable_editor_service import PLATFORMS as EDITOR_PLATFORMS
 
     covered = (set(RNA_PROCESSING_MECHANISMS)
                | set(TRANSLATIONAL_MECHANISM_CHEMISTRY)
@@ -354,7 +355,13 @@ def test_every_designable_mechanism_has_a_designer():
                | set(NEUTRALIZATION_MECHANISM_CHEMISTRY)
                | set(EDITING_MECHANISM_EDIT_TYPES)
                # gene_silencing_service._mechanism_design_constraints
-               | {"A1", "A2", "A12", "A15"})
+               | {"A1", "A2", "A12", "A15"}
+               # Dedicated designers added for mechanisms the goal services
+               # cannot build: siRNA duplexes, protein-dependent RNA editors,
+               # and the two pre-mRNA mechanisms that need genomic sequence.
+               | {"A21"}
+               | set(EDITOR_PLATFORMS)
+               | {"A32", "A33"})
 
     orphans = []
     for path in glob.glob("rulebooks/A*/rule.json"):
@@ -400,3 +407,62 @@ def test_sequence_liabilities_keeps_what_sequence_determines():
     # A clean sequence raises nothing.
     quiet = get_sequence_liabilities("AACAACAACAACAACAACAA")
     assert quiet["immuneAndStructural"]["flags"] == []
+
+
+def test_sirna_duplex_strands_are_complementary():
+    """A21 emits two strands; the guide must be the target's reverse complement."""
+    from services.sirna_duplex_service import design_sirna_duplexes, _revcomp
+    out = design_sirna_duplexes("ENSG00000197386", "HTT", max_candidates=4)
+    assert out["status"] == "OK"
+    assert out["candidates"]
+    for c in out["candidates"]:
+        assert _revcomp(c["passengerCore"]) == c["guideCore"]
+        assert len(c["guideCore"]) == 19
+        assert c["guideStrand"].endswith(c["overhang"])
+        assert c["passengerStrand"].endswith(c["overhang"])
+        assert c["seedRegion"] == c["guideCore"][1:8]
+    # Ranked so the guide's 5' end is the looser one.
+    scores = [c["asymmetryScore"] for c in out["candidates"]]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_editor_guides_refuse_the_wrong_target_base():
+    """An A-to-I editor must not be pointed at a non-adenosine."""
+    from services.programmable_editor_service import design_editor_guides
+    with pytest.raises(ValueError, match="not a protein-dependent"):
+        design_editor_guides("A13", "ENSG00000197249", 1096)
+    out = design_editor_guides("A19", "ENSG00000197249", edit_position=1096,
+                               gene_symbol="SERPINA1", max_candidates=3)
+    if out["status"] == "OK":
+        for c in out["candidates"]:
+            assert c["spacer"][c["mismatchPosition"] - 1] == c["mismatchBase"]
+            assert len(c["spacer"]) == c["spacerLength"]
+            # The scaffold is named, never invented.
+            assert "source" in c["scaffoldRequired"]
+
+
+def test_editor_scaffold_sequence_is_never_invented():
+    """No literal direct-repeat / hairpin sequence may appear in the module."""
+    from services import programmable_editor_service as pes
+    literals = _nucleotide_literals_in_code(pathlib.Path(pes.__file__))
+    assert not literals, (
+        f"a scaffold sequence appears to be hard-coded: {literals}. Getting a "
+        f"direct repeat wrong by one base yields a guide that does not load, "
+        f"so it must come from the construct, not from recall."
+    )
+
+
+def test_no_mechanism_is_silently_unavailable():
+    """Every mechanism either has a designer or states why it has none."""
+    import glob
+    silent = []
+    for path in glob.glob("rulebooks/A*/rule.json"):
+        rule = json.loads(pathlib.Path(path).read_text())
+        arb = rule.get("arbitration", {})
+        mech = rule.get("mechanismId") or pathlib.Path(path).parent.name
+        if not arb.get("designAvailable") and not arb.get("designUnavailableReason"):
+            silent.append(mech)
+    assert not silent, (
+        f"these mechanisms produce no candidates and give no reason, so a "
+        f"user sees an empty result with no explanation: {sorted(silent)}"
+    )

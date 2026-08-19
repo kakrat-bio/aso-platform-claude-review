@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Readthrough efficiency depends on PTC context, flanking sequence, and cell type; no validated ASO design rules exist.",
+    "designUnavailableReason": "Premature stop codon readthrough is achieved with a small molecule or a modified tRNA acting on the ribosome, not with a designed oligonucleotide complementary to the transcript. There is no sequence for this platform to design.",
     "flagReason": "Preclinical only; small-molecule readthrough agents failed clinical trials. ASO-based readthrough is emerging. Surfaced qualitatively."
   }
 }

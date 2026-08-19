@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Requires structure-based selection (SELEX), not antisense complementarity.",
+    "designUnavailableReason": "An aptamer's sequence is the output of SELEX against the target protein. Kd, fold and specificity are properties of the selected aptamer and are not derivable from the transcript.",
     "flagReason": "Pegaptanib is a real approved drug, but an aptamer's sequence is the output of SELEX against the target protein, not of sequence design against a transcript. Kd, specificity and fold are properties of the selected aptamer, so there is nothing here to rank on that would not be invented. Surfaced qualitatively instead of scored."
   }
 }

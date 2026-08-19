@@ -64,7 +64,7 @@
     "requiredFeatures": [],
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
-    "designAvailable": false,
-    "designUnavailableReason": "REPAIR delivers dCas13b-ADAR2dd as a fusion protein; its guide is a crRNA carrying the Cas13b direct-repeat scaffold. This service designs linear guides that recruit an endogenous deaminase and emits no scaffold, so a candidate from it would not be a REPAIR guide."
+    "designAvailable": true,
+    "designUnavailableReason": null
   }
 }

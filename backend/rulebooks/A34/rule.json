@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Requires bifunctional ASO design with spliceosome recruitment; no validated design rules.",
+    "designUnavailableReason": "Trans-splicing exon replacement needs a pre-trans-splicing molecule: a binding domain against the target intron, a splice site, and the replacement exon cargo. The binding domain requires intronic sequence and the cargo requires the corrected exon, so this is a distinct construct from anything the current designers build. The mechanism still competes for ranking.",
     "flagReason": "Preclinical only; trans-splicing efficiency is low and no approved therapy exists. Surfaced qualitatively."
   }
 }

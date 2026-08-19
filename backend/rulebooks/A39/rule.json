@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Requires SELEX for two independent binding domains plus linker optimization.",
+    "designUnavailableReason": "A bifunctional aptamer's two binding arms are each SELEX outputs and the linker geometry between them is an empirical result.",
     "flagReason": "Preclinical only; bifunctional aptamer design is complex and no approved therapy exists. Surfaced qualitatively."
   }
 }

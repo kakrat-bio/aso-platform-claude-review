@@ -703,3 +703,93 @@ async def gene_features(
         gene_type=gene_type,
     )
     return result
+
+# ---------------------------------------------------------------------------
+# Designers for mechanisms the goal-specific services cannot build
+# ---------------------------------------------------------------------------
+
+class SirnaDuplexRequest(BaseModel):
+    ensembl_gene_id: str
+    gene_symbol: str = ""
+    organism: str = "homo_sapiens"
+    max_candidates: int = 12
+
+
+@router.post("/api/mechanisms/A21/sirna-duplex")
+async def design_a21_duplex(payload: SirnaDuplexRequest):
+    """A21 — siRNA duplex design (guide + passenger with 3' overhangs)."""
+    from services.sirna_duplex_service import design_sirna_duplexes
+    try:
+        return design_sirna_duplexes(
+            ensembl_gene_id=payload.ensembl_gene_id,
+            gene_symbol=payload.gene_symbol,
+            organism=payload.organism,
+            max_candidates=payload.max_candidates,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+class EditorGuideRequest(BaseModel):
+    mechanism_id: str
+    ensembl_gene_id: str
+    edit_position: int
+    gene_symbol: str = ""
+    organism: str = "homo_sapiens"
+    max_candidates: int = 8
+
+
+@router.post("/api/mechanisms/editor-guide")
+async def design_editor_guide(payload: EditorGuideRequest):
+    """A18 / A19 — spacers for protein-dependent RNA editors."""
+    from services.programmable_editor_service import design_editor_guides
+    try:
+        return design_editor_guides(
+            mechanism_id=payload.mechanism_id,
+            ensembl_gene_id=payload.ensembl_gene_id,
+            edit_position=payload.edit_position,
+            gene_symbol=payload.gene_symbol,
+            organism=payload.organism,
+            max_candidates=payload.max_candidates,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+class IntronRetentionRequest(BaseModel):
+    ensembl_gene_id: str
+    intron_number: int
+    gene_symbol: str = ""
+    organism: str = "homo_sapiens"
+    oligo_length: int = 20
+    splice_element: str = "both"
+    max_candidates: int = 12
+
+
+@router.post("/api/mechanisms/A33/intron-retention")
+async def design_a33_intron(payload: IntronRetentionRequest):
+    """A33 — steric blockers across an intron's splice sites."""
+    from services.transcript_architecture_service import design_intron_retention
+    try:
+        return design_intron_retention(**payload.dict())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+class AlternativePromoterRequest(BaseModel):
+    ensembl_gene_id: str
+    gene_symbol: str = ""
+    organism: str = "homo_sapiens"
+    oligo_length: int = 20
+    promoter_index: int = 1
+    max_candidates: int = 12
+
+
+@router.post("/api/mechanisms/A32/alternative-promoter")
+async def design_a32_promoter(payload: AlternativePromoterRequest):
+    """A32 — oligos across the TSS-proximal region of one promoter."""
+    from services.transcript_architecture_service import design_alternative_promoter
+    try:
+        return design_alternative_promoter(**payload.dict())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

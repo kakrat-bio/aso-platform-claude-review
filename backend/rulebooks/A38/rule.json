@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Requires SELEX-based aptamer selection, conjugation chemistry optimization, and payload design.",
+    "designUnavailableReason": "The aptamer half of an aptamer-drug conjugate comes from SELEX; the payload and linker are medicinal-chemistry choices. None of the three is a sequence-design output.",
     "flagReason": "Preclinical only; no aptamer-drug conjugate has received clinical approval. Surfaced qualitatively."
   }
 }

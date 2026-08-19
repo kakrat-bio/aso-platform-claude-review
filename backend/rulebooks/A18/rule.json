@@ -64,7 +64,7 @@
     "requiredFeatures": [],
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
-    "designAvailable": false,
-    "designUnavailableReason": "CIRTS delivers an engineered RNA-binding protein alongside its guide; the guide is a scaffolded hairpin recognised by that protein, not a bare antisense oligonucleotide. This service designs linear guides that recruit an ENDOGENOUS deaminase, so it cannot produce a CIRTS guide."
+    "designAvailable": true,
+    "designUnavailableReason": null
   }
 }

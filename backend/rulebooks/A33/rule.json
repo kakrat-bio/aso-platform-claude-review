@@ -79,7 +79,7 @@
     ],
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
-    "designAvailable": false,
-    "designUnavailableReason": "Targeted intron retention acts on an intron's splice sites, and this designer operates on the spliced mRNA, from which introns are by definition absent. Designing it needs intronic sequence with branch-point and polypyrimidine-tract annotation. The mechanism still competes for ranking; only the design step is unavailable."
+    "designAvailable": true,
+    "designUnavailableReason": null
   }
 }

@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Requires tRNA engineering, aminoacylation, and delivery; no validated platform.",
+    "designUnavailableReason": "An engineered suppressor tRNA is designed by mutating the anticodon of a natural tRNA scaffold to read the premature stop. That needs a curated tRNA body per isoacceptor, which is not populated here, and the design is a tRNA rather than an antisense oligonucleotide.",
     "flagReason": "Preclinical only; tRNA delivery and specificity challenges unresolved. Surfaced qualitatively."
   }
 }

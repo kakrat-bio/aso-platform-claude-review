@@ -62,8 +62,13 @@
     "requiredFeatures": [],
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
-    "designAvailable": false,
-    "designUnavailableReason": "Requires circularisation strategy and IRES selection.",
-    "flagReason": "No approved circRNA therapy exists, so a stated applicability could not be validated. Surfaced qualitatively instead of scored."
+    "designAvailable": true,
+    "designUnavailableReason": null,
+    "flagReason": "No approved circRNA therapy exists, so a stated applicability could not be validated. Surfaced qualitatively instead of scored.",
+    "designRoute": {
+      "endpoint": "/api/protein-replacement/generate",
+      "rnaModality": "circrna",
+      "note": "Circular RNA — the `circrna` architecture of /api/protein-replacement/generate"
+    }
   }
 }

@@ -71,7 +71,7 @@
       "F10a",
       "F9"
     ],
-    "designAvailable": false,
-    "designUnavailableReason": "Requires a double-stranded siRNA duplex; this designer emits single strands only. The mechanism still competes: siRNA is a genuine alternative to RNase H knockdown for any knockdown target, and with five approved drugs it is fully validatable. Taking it forward needs a duplex design pipeline."
+    "designAvailable": true,
+    "designUnavailableReason": null
   }
 }

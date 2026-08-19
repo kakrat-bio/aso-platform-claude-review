@@ -69,7 +69,7 @@
     "forbiddenFeatures": [],
     "discriminatingFeatures": [],
     "designAvailable": false,
-    "designUnavailableReason": "Requires structural biology data for allosteric site identification and SELEX-based selection.",
+    "designUnavailableReason": "An allosteric aptamer's ligand-dependent switch is established by SELEX and biophysical characterisation, not by sequence design.",
     "flagReason": "Preclinical only; allosteric aptamer design requires detailed structural knowledge not available in this platform. Surfaced qualitatively."
   }
 }

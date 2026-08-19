@@ -249,18 +249,23 @@ def test_accessibility_is_a_tie_break_not_a_gate():
 # Mechanism states (v3 §4)
 # ---------------------------------------------------------------------------
 
-def test_a21_is_scored_and_competes_despite_being_undesignable_here():
+def test_a21_is_scored_and_now_designable_through_its_own_designer():
     """siRNA is a real alternative to a gapmer and has five approved drugs.
 
-    It is not designable by a single-stranded designer, but hiding it removed
-    an option from a decision the scientist actually makes.
+    This used to assert `designAvailable is False`: A21 competed for ranking
+    but produced no candidates, because the ASO designer emits single strands
+    and an siRNA is a duplex. `services/sirna_duplex_service.py` now supplies
+    that stage — guide plus passenger with 3' overhangs, ranked by the
+    thermodynamic asymmetry that decides which strand RISC loads — so the
+    mechanism is designable and the old assertion no longer describes the
+    system.
     """
     out = A.arbitrate(A.ArbitrationContext(
         gene_symbol="TTR", molecular_defect="gain_of_function"))
     a21 = next(r for r in out["results"] if r["id"] == "A21")
     assert a21["status"] == A.ELIGIBLE
-    assert a21["designAvailable"] is False
-    assert a21["designUnavailableReason"]
+    assert a21["designAvailable"] is True
+    assert not a21["designUnavailableReason"]
 
 
 def test_flagged_mechanisms_never_enter_the_ranking():
