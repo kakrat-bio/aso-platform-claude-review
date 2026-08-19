@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+from functools import lru_cache
 import os
 import re
 import time
@@ -722,6 +723,74 @@ def _tm_fit_score(
     return round(max(0.0, 100.0 - dist * 6.0), 1)
 
 
+# Folding is capped at this many nucleotides so a long transcript cannot
+# dominate a design request. Sites beyond the cap report no accessibility
+# rather than a guessed one.
+ACCESSIBILITY_MAX_NT = 6000
+
+
+@lru_cache(maxsize=32)
+def _accessibility_profile_cached(mrna: str, length: int) -> tuple:
+    """Memoised wrapper. Returns items() so the result stays hashable-safe.
+
+    A user comparing oligo lengths on one target, and the test suite hitting
+    the same transcript repeatedly, both re-fold identical sequence otherwise.
+    The fold is the expensive part of a design request (~3 s at the 6 kb cap).
+    """
+    return tuple(_accessibility_profile(mrna, length).items())
+
+
+def _accessibility_profile(mrna: str, length: int) -> dict[int, float]:
+    """Unpaired probability of every `length`-nt window, in ONE fold.
+
+    Computed per transcript, not per candidate. The first version called
+    RNAplfold separately for each candidate over its own 320-nt slice, which
+    turned a whole-transcript design into hundreds of folds and took the test
+    suite from 21 s to 155 s. RNAplfold already returns the profile for every
+    position in a single sliding-window pass, so one call answers every site.
+
+    Keyed by the 0-based START index of the window.
+    """
+    if not mrna or length <= 0:
+        return {}
+    rna = mrna.upper().replace("T", "U")[:ACCESSIBILITY_MAX_NT]
+    if len(rna) < length * 2 or (set(rna) - set("ACGU")):
+        return {}
+    profile: dict[int, float] = {}
+
+    def _collect(v, size, i, maxsize, what, data):
+        # `i` is the 1-based END of the unpaired stretch, so the window starts
+        # at i - length in 0-based coordinates.
+        if what & RNA.PROBS_WINDOW_UP and v is not None and len(v) > length:
+            value = v[length]
+            if value is not None:
+                start = i - length
+                if start >= 0:
+                    profile[start] = round(float(value), 6)
+
+    try:
+        md = RNA.md()
+        md.max_bp_span = 150
+        md.window_size = 200
+        fc = RNA.fold_compound(rna, md, RNA.OPTION_WINDOW)
+        fc.probs_window(length, RNA.PROBS_WINDOW_UP, _collect, None)
+    except Exception as exc:
+        logger.warning("Accessibility profile failed: %s", exc)
+        return {}
+    return profile
+
+
+def _percentile_rank(value: float | None, pool: list[float],
+                     higher_is_better: bool) -> float | None:
+    """Where `value` sits within `pool`, 0-100. None when it cannot be placed."""
+    usable = [v for v in pool if v is not None]
+    if value is None or len(usable) < 2:
+        return None
+    below = sum(1 for v in usable if (v < value) == higher_is_better and v != value)
+    ties = sum(1 for v in usable if v == value)
+    return round((below + 0.5 * ties) / len(usable) * 100, 1)
+
+
 def _composite_score(dg: float, tm_fit: float) -> float:
     """Ranking score built exclusively from real, physics-based metrics:
     the ViennaRNA target duplex ΔG and the chemistry-adjusted Tm fit.
@@ -1106,6 +1175,10 @@ def generate_candidates(
     seq = mrna_sequence.upper()
     seq_len = len(seq)
 
+    # One fold for the whole transcript; every candidate reads its site from
+    # this profile. See _accessibility_profile for why this is not per-site.
+    accessibility_profile = dict(_accessibility_profile_cached(seq, aso_length))
+
     # Prefer each exon's exact CDS-relative offset, computed upstream by
     # _map_exons_to_cds from the real cDNA-to-CDS alignment. Only fall back
     # to a proportional genomic-length estimate if that mapping is missing
@@ -1347,6 +1420,7 @@ def generate_candidates(
             # target-duplex ΔG plus the chemistry-adjusted Tm fit.
             tm_fit = _tm_fit_score(tm, chemistry, modifications, mechanism_id)
             composite_score = _composite_score(duplex_energy, tm_fit)
+            accessibility = accessibility_profile.get(offset)
 
             candidates.append({
                 "sequence": aso_seq,
@@ -1361,6 +1435,12 @@ def generate_candidates(
                 # Measured / computed properties — exact physics and sequence
                 # computations, the tier that drives ranking.
                 "realMetrics": {
+                    # Probability the target window is unpaired, from the
+                    # ViennaRNA sliding-window partition function. For an
+                    # RNase-H gapmer this is the term with the clearest
+                    # mechanistic claim: the heteroduplex cannot form inside
+                    # a stable hairpin no matter how favourable its ΔG.
+                    "siteAccessibility": accessibility,
                     "targetDuplexEnergy": duplex_energy,  # Real ViennaRNA duplex ΔG (kcal/mol)
                     "meltingTempC": tm,  # Real nearest-neighbor Tm (°C) via primer3
                     "selfStructureMfe": self_mfe,  # Real ViennaRNA MFE (kcal/mol)
@@ -1422,6 +1502,46 @@ def generate_candidates(
                 "alleleDiscriminationNote": allele["alleleDiscriminationNote"],
             })
 
+    # THE COMPOSITE SCORE SATURATES AND HAD TO STOP BEING THE PRIMARY AXIS.
+    #
+    # `_composite_score` maps duplex ΔG through `(-dg - 8) * 3.5` clipped at
+    # 100. Those constants suit the ΔG spread of oligos from 12 to 30 nt, but
+    # every candidate in one run is the SAME length, so the spread within a
+    # run is a few kcal/mol and everything clips. Measured on HTT exons 1-3 at
+    # 20 nt: all 10 candidates scored exactly 100.0 — one distinct value, a
+    # ten-way tie, with the displayed order decided by nothing at all.
+    #
+    # Two changes. Each candidate now carries its percentile within THIS
+    # pool, so the numbers discriminate by construction instead of against an
+    # absolute constant that does not fit. And site accessibility becomes the
+    # primary axis: it varies across three orders of magnitude between sites
+    # on the same transcript, and for an RNase-H gapmer it is the term with
+    # the real mechanistic claim behind it.
+    #
+    # E12 in backend/experiments/ml_analysis measured ΔG-first ordering
+    # against 528 held-out experiments and found it selects BELOW chance,
+    # because at fixed length ΔG mostly tracks GC. That is why it is no
+    # longer the thing candidates are sorted on.
+    acc_pool = [c["realMetrics"].get("siteAccessibility") for c in candidates]
+    dg_pool = [c["realMetrics"].get("targetDuplexEnergy") for c in candidates]
+    for c in candidates:
+        rm = c["realMetrics"]
+        c["accessibilityPercentile"] = _percentile_rank(
+            rm.get("siteAccessibility"), acc_pool, higher_is_better=True)
+        c["duplexEnergyPercentile"] = _percentile_rank(
+            rm.get("targetDuplexEnergy"), dg_pool, higher_is_better=False)
+        c["rankingBasis"] = {
+            "primary": "siteAccessibility (ViennaRNA unpaired probability)",
+            "tieBreak": "compositeScore, then duplex ΔG",
+            "caveat": (
+                "Accessibility is a mechanistic requirement, not a validated "
+                "activity model. Duplex-ΔG-first ordering was measured below "
+                "chance on 528 held-out experiments "
+                "(backend/experiments/ml_analysis, E12), so it is a tie-break "
+                "here rather than the primary axis."
+            ),
+        }
+
     # Rank by the composite design score (higher = better). In allele-specific
     # scope with a parsed variant, all surviving candidates span the variant, so
     # the primary axis is allele discrimination (mismatch proximity to the RNase
@@ -1445,6 +1565,10 @@ def generate_candidates(
         )
     else:
         candidates.sort(
-            key=lambda c: (-c["compositeScore"], c["realMetrics"]["targetDuplexEnergy"])
+            key=lambda c: (
+                -(c["realMetrics"].get("siteAccessibility") or -1.0),
+                -c["compositeScore"],
+                c["realMetrics"]["targetDuplexEnergy"],
+            )
         )
     return candidates[:10]

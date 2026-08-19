@@ -483,3 +483,62 @@ def test_no_mechanism_is_silently_unavailable():
         f"these mechanisms produce no candidates and give no reason, so a "
         f"user sees an empty result with no explanation: {sorted(silent)}"
     )
+
+
+# ---------------------------------------------------------------------------
+# A1 / A2 — the two mechanisms the platform leans on hardest
+# ---------------------------------------------------------------------------
+
+def test_a1_ranking_is_not_a_saturated_tie(monkeypatch):
+    """compositeScore clipped at 100 for every candidate of one length.
+
+    `_composite_score` maps duplex dG through `(-dg - 8) * 3.5` capped at 100.
+    Those constants suit oligos from 12 to 30 nt, but every candidate in one
+    run has the SAME length, so the within-run spread is a few kcal/mol and
+    all of it clips. Measured on HTT exons 1-3 at 20 nt: 10 candidates, one
+    distinct score, a ten-way tie with the displayed order decided by nothing.
+    """
+    from services.gene_silencing_service import (
+        get_target_analysis, generate_candidates,
+    )
+    target = get_target_analysis("ENSG00000197386", gene_symbol="HTT")
+    cands = generate_candidates(
+        [1, 2, 3], 20, "gapmer", [], target["mrnaSequence"], target["exons"],
+        "A1", defect_type="gain_of_function", silencing_scope="total_knockdown")
+    assert len(cands) >= 5
+
+    accs = [c["realMetrics"].get("siteAccessibility") for c in cands]
+    assert all(a is not None for a in accs), "site accessibility not computed"
+    # The primary ranking axis must actually separate the candidates.
+    assert len(set(accs)) > 1, (
+        "every candidate has identical site accessibility — the ranking is "
+        "degenerate again")
+    # And it must be the axis they are sorted on.
+    assert accs == sorted(accs, reverse=True), (
+        f"candidates are not ordered by accessibility: {accs}")
+    for c in cands:
+        assert c["rankingBasis"]["primary"].startswith("siteAccessibility")
+        assert "below chance" in c["rankingBasis"]["caveat"]
+        assert c["accessibilityPercentile"] is not None
+
+
+def test_a1_a2_are_separated_by_f10_when_a_transcript_is_supplied():
+    """The F10a/F10b split exists to break the A1 vs A2 tie.
+
+    Without a transcript both sit at rulebook evidence. With one, A1 asks
+    whether ANY accessible cleavable site exists and A2 asks specifically
+    about the translation-initiation region, so a transcript that is open
+    elsewhere but structured at the AUG must separate them.
+    """
+    from services.gene_silencing_service import get_target_analysis
+    from services import mechanism_arbitration as MA
+    target = get_target_analysis("ENSG00000197386", gene_symbol="HTT")
+    out = MA.arbitrate(MA.ArbitrationContext(
+        gene_symbol="HTT", molecular_defect="gain_of_function",
+        transcript_sequence=target["mrnaSequence"],
+        cds_start=len(target.get("utr5Sequence") or ""), oligo_length=20))
+    by_id = {r["id"]: r for r in out["results"]}
+    assert "A1" in by_id and "A2" in by_id
+    assert by_id["A1"]["score"] != by_id["A2"]["score"], (
+        "A1 and A2 scored identically with a real transcript supplied; the "
+        "F10a/F10b split is not discriminating")
