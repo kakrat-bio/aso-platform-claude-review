@@ -5,58 +5,69 @@ export interface IsoformEngineeringInputs {
   spliceElementTarget: string;
   stericChemistry: string;
   enforceInFrame: boolean;
+  asoLength?: number;
+  maxCandidates?: number;
 }
 
+// TG07 designs a steric-blocking oligonucleotide, not an mRNA construct.
+// The previous shape carried CAI, uridine content, TLR scores and a predicted
+// half-life — properties of a delivered mRNA (TG08) that an ASO does not have,
+// and which the backend was inventing from a loop index. They are gone.
 export interface IsoformOverview {
   targetGene: string;
-  refSeq: string;
-  nativeLength: string;
-  vectorTopology: string;
-  cai: number;
-  uContent: number;
+  geneId: string | null;
+  refSeq: string | null;
+  transcriptLength: number;
+  exonCount: number;
+  targetExon: number;
+  exonLength: number;
+  targetWindow: string;
+  windowStart: number;
+  windowEnd: number;
+  isoformGoal: string;
+  spliceElementTarget: string;
   primaryMechanism: string;
-  feasibilityScore: number;
-  predictedHalfLife: string;
+  inFrameStatus: string;
+  frameNote: string | null;
+  spliceSiteStrength: number | null;
 }
 
 export interface IsoformCandidate {
   rank: number;
   constructId: string;
   modality: string;
-  vectorTopology: string;
-  cai: number;
-  uContent: number;
-  mfe: number;
-  initiationEfficiency: number;
-  predictedIsoformYield: string;
-  tlrRisk: string;
-  spliceEfficiency: number;
-  inFrameStatus: string;
-  secondaryStructureFlag: string;
+  mechanismChemistry: string;
   sequence: string;
-  features: ConstructFeature[];
-  diagnostics: ConstructDiagnostics;
+  targetSequence: string;
+  transcriptStart: number;
+  transcriptEnd: number;
+  length: number;
+  gcContent: number;
+  meltingTempC: number | null;
+  selfMfe: number | null;
+  targetDuplexDg: number | null;
+  targetWindow: string;
+  exonNumber: number;
+  exonLength: number;
+  inFrameStatus: string;
+  spliceSiteStrength: number | null;
+  /** Null with a stated reason rather than a fabricated value. */
+  predictedIsoformYield: null;
+  tlrRisk: null;
+  notComputed: Record<string, string>;
 }
 
-export interface ConstructFeature {
-  name: string;
-  start: number;
-  end: number;
-  type: "utr" | "kozak" | "orf" | "splice" | "utr3" | "polyA" | "exon" | "intron" | "scarsplice";
-}
-
-export interface ConstructDiagnostics {
-  aminoAcidIdentity: number;
-  tlr3Score: number;
-  tlr7Score: number;
-  tlr8Score: number;
-  mfePlot: string;
-  fiveUtrHairpin: boolean;
-  spliceSiteScore: number;
+export interface IsoformRanking {
+  orderedBy: string;
+  caveat: string;
 }
 
 export interface IsoformEngineeringResponse {
+  status: "OK" | "UNAVAILABLE";
+  message?: string;
   overview: IsoformOverview;
+  ranking?: IsoformRanking;
+  dataProvenance?: Record<string, string>;
   candidates: IsoformCandidate[];
 }
 

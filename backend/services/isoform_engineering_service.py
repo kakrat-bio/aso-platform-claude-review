@@ -13,6 +13,7 @@ import os
 import re
 from typing import Any
 
+import primer3
 import requests
 import RNA
 
@@ -168,20 +169,60 @@ def _calc_gc(seq: str) -> float:
     return round(sum(1 for b in seq if b in "GCgc") / len(seq) * 100, 1)
 
 
-def _estimate_initiation(cai: float, u_content: float) -> int:
-    score = max(0, min(50, (cai - 0.7) / 0.3 * 50))
-    score += max(0, min(50, (22 - u_content) / 10 * 50))
-    return int(max(55, min(98, score)))
+def _reverse_complement(seq: str) -> str:
+    """Antisense strand for an RNA target window. Handles T and U alike."""
+    table = {"A": "U", "U": "A", "T": "A", "G": "C", "C": "G"}
+    return "".join(table.get(b, "N") for b in reversed(seq.upper()))
 
 
-def _estimate_yield(cai: float, initiation: int) -> str:
-    base = cai * 0.6 + initiation / 100 * 0.4
-    mult = base * 3.5
-    if mult >= 2.8:
-        return f"{mult:.1f}x High"
-    if mult >= 1.8:
-        return f"{mult:.1f}x Medium"
-    return f"{mult:.1f}x Low"
+def _calc_tm(seq: str) -> float | None:
+    """Nearest-neighbour Tm (SantaLucia via primer3) on the DNA analogue."""
+    dna = seq.upper().replace("U", "T")
+    if not dna or set(dna) - set("ACGT"):
+        return None
+    return round(primer3.calc_tm(dna), 1)
+
+
+def _duplex_dg(aso: str, target: str) -> float | None:
+    """ViennaRNA duplex free energy for the ASO against its target window."""
+    if not aso or not target:
+        return None
+    try:
+        return round(RNA.duplexfold(aso.upper(), target.upper()).energy, 2)
+    except Exception:
+        return None
+
+
+# How wide a window each splice element occupies, and where it sits relative
+# to the target exon. These are the regions a steric blocker is aimed at; the
+# widths are design windows, not measured element boundaries.
+ELEMENT_WINDOWS = {
+    "splice_acceptor": ("exon_5p", 30),
+    "splice_donor": ("exon_3p", 30),
+    "exonic_splicing_enhancer": ("exon_body", 0),
+    "exonic_splicing_silencer": ("exon_body", 0),
+    "branch_point": ("exon_5p", 30),
+}
+
+
+def _target_window(mrna: str, exon: dict, splice_element_target: str
+                   ) -> tuple[int, int, str]:
+    """(start, end, label) of the region the ASO is tiled across.
+
+    Coordinates are transcript-relative, taken from the exon's real
+    cdsStart/cdsEnd mapping rather than estimated from genomic length.
+    """
+    lo = int(exon.get("cdsStart") or 0)
+    hi = int(exon.get("cdsEnd") or 0)
+    lo, hi = max(0, min(lo, len(mrna))), max(0, min(hi, len(mrna)))
+    if hi <= lo:
+        return 0, 0, "unavailable"
+    where, width = ELEMENT_WINDOWS.get(splice_element_target, ("exon_body", 0))
+    if where == "exon_5p":
+        return lo, min(hi, lo + width), "exon 5' boundary (acceptor side)"
+    if where == "exon_3p":
+        return max(lo, hi - width), hi, "exon 3' boundary (donor side)"
+    return lo, hi, "exon body"
 
 
 def generate_isoform_candidates(
@@ -191,130 +232,208 @@ def generate_isoform_candidates(
     splice_element_target: str,
     steric_chemistry: str,
     enforce_in_frame: bool = True,
+    aso_length: int = 20,
+    max_candidates: int = 12,
     organism: str = "homo_sapiens",
 ) -> dict[str, Any]:
-    """Generate isoform engineering candidates from real exon data."""
+    """Tile steric-blocking ASOs across a real splice element and rank them.
+
+    WHAT CHANGED AND WHY. This function used to emit eight candidates from a
+    fixed loop: one hard-coded sequence (`"GCCACC" + "A"*76 + "AUG" +
+    "GCU"*20 + ...`) repeated for every gene, splice efficiencies invented as
+    `75 + i*2 - (i%3)*5` whenever the real splice-site fetch returned
+    nothing, and CAI / U-content / TLR / amino-acid-identity numbers produced
+    by arithmetic on the loop index. It also called `_calc_cai` and
+    `_calc_u_content`, which do not exist in this module, so every request
+    raised NameError before any of it reached a caller.
+
+    Two separate problems, both fixed here. The invented numbers violate the
+    project's standing rule that a missing value is reported, never
+    synthesised. And CAI, U-content, TLR risk and predicted yield are
+    properties of an mRNA CONSTRUCT (TG08); this goal designs a
+    steric-blocking oligonucleotide, which has none of them. They are gone
+    rather than recomputed.
+
+    What is emitted now comes from the transcript: the ASO is the reverse
+    complement of a real window inside the real target exon, located by that
+    exon's own cdsStart/cdsEnd mapping. GC, Tm (primer3, SantaLucia) and
+    duplex dG (ViennaRNA) are computed on that sequence. Frame status is
+    arithmetic on the real exon length. Splice-site strength appears only
+    when the flanking genomic sequence was actually fetched.
+
+    Ranking is by target-duplex dG, which is thermodynamics, not a validated
+    activity model. `backend/experiments/ml_analysis` (E12) measured exactly
+    this kind of ordering against 528 held-out experiments and found it ranks
+    below chance because it is largely a GC proxy. The ordering is labelled
+    accordingly in the response and should be treated as a starting point for
+    triage, not a prediction.
+    """
     symbol = target_symbol.strip().upper()
     if not symbol:
         raise ValueError("target_symbol is required")
 
     splice_data = _fetch_exon_splice_sites(symbol, target_exon_locus, organism)
     exons = splice_data.get("exons", [])
-    cds = splice_data.get("cdsSequence", "") or ""
+    mrna = (splice_data.get("cdsSequence") or "").upper().replace("T", "U")
     splice_sites = splice_data.get("spliceSites", [])
 
-    if not cds and exons:
-        cds = "".join(["AUG" + "GCU" * 10] * 3)
-
-    cds_clean = cds.upper().replace("T", "U")
-    if cds_clean.startswith("AUG"):
-        cds_clean = cds_clean[cds_clean.index("AUG"):]
-    if len(cds_clean) % 3 != 0:
-        cds_clean = cds_clean[: len(cds_clean) // 3 * 3]
-
-    cai = _calc_cai(cds_clean)
-    u_content = _calc_u_content(cds_clean)
-    gc_content = _calc_gc(cds_clean)
-    mfe = _calc_mfe(cds_clean[:200])
-    initiation = _estimate_initiation(cai, u_content)
-    yield_label = _estimate_yield(cai, initiation)
-
-    candidates = []
-    target_exon_num = 7
-    m = re.search(r"exon_(\d+)", target_exon_locus)
-    if m:
-        target_exon_num = int(m.group(1))
-
-    chem_label = {
-        "gapmer": "DNA Gapmer (2'-MOE/PS)",
-        "lnai": "LNA/2'-O-Methyl mix",
-        "fully_modified": "Fully Modified 2'-MOE/PS",
-        "pna": "Peptide Nucleic Acid (PNA)",
-    }.get(steric_chemistry, steric_chemistry)
-
-    goal_label = {
-        "exon_skipping": "Exon Skipping",
-        "exon_inclusion": "Exon Inclusion",
-        "intron_retention": "Intron Retention",
-        "alternative_splice_site": "Alternative Splice Site Selection",
-        "mutually_exclusive_exon": "Mutually Exclusive Exon Switch",
-    }.get(isoform_goal, isoform_goal)
-
-    for i in range(8):
-        aso_length = 18 + i
-        splice_eff = 0
-        if splice_sites:
-            splice_eff = int(splice_sites[0]["strength"] * 100)
-        else:
-            splice_eff = max(55, min(96, 75 + i * 2 - (i % 3) * 5))
-
-        in_frame = True
-        if not enforce_in_frame:
-            in_frame = (i % 4 != 0)
-
-        construct_id = f"iso-{symbol}-v{i+1}"
-        seq = (
-            "GCCACC"
-            + "A" * 76
-            + "AUG"
-            + "GCU" * 20
-            + "UAA"
-            + "A" * 120
+    unavailable = {
+        "status": "UNAVAILABLE",
+        "overview": {
+            "targetGene": symbol,
+            "refSeq": splice_data.get("canonicalTranscript") or None,
+            "primaryMechanism": None,
+            "targetWindow": None,
+        },
+        "candidates": [],
+    }
+    if not exons or not mrna:
+        unavailable["message"] = (
+            f"No transcript sequence or exon map could be retrieved for "
+            f"{symbol}. No oligo can be designed against it, and none is "
+            f"invented here."
         )
+        return unavailable
 
+    exon_num = None
+    m = re.search(r"exon_(\d+)", target_exon_locus or "")
+    if m:
+        exon_num = int(m.group(1))
+    if exon_num is None or not (1 <= exon_num <= len(exons)):
+        unavailable["message"] = (
+            f"target_exon_locus {target_exon_locus!r} does not name an exon of "
+            f"the canonical transcript, which has {len(exons)} exons."
+        )
+        return unavailable
+
+    exon = exons[exon_num - 1]
+    lo, hi, window_label = _target_window(mrna, exon, splice_element_target)
+    if hi - lo < aso_length:
+        unavailable["message"] = (
+            f"Exon {exon_num} maps to transcript positions {lo}-{hi}, which is "
+            f"shorter than the {aso_length} nt oligo requested. Nothing is "
+            f"designed rather than padding the window."
+        )
+        return unavailable
+
+    # Frame arithmetic on the real exon. Skipping an exon whose length is not
+    # a multiple of three shifts the reading frame downstream of it.
+    exon_len = int(exon.get("cdsEnd", 0)) - int(exon.get("cdsStart", 0))
+    in_frame = exon_len % 3 == 0
+    frame_label = "In-Frame" if in_frame else "Out-of-Frame"
+
+    splice_strength = None
+    if splice_sites:
+        raw = splice_sites[0].get("strength")
+        splice_strength = round(float(raw), 3) if raw is not None else None
+
+    step = max(1, (hi - lo - aso_length) // max(max_candidates - 1, 1))
+    seen: set[str] = set()
+    candidates: list[dict[str, Any]] = []
+    for offset in range(lo, hi - aso_length + 1, step):
+        target_seq = mrna[offset:offset + aso_length]
+        if len(target_seq) < aso_length or set(target_seq) - set("ACGU"):
+            continue
+        aso = _reverse_complement(target_seq)
+        if aso in seen:
+            continue
+        seen.add(aso)
         candidates.append({
-            "rank": i + 1,
-            "constructId": construct_id,
-            "modality": "Isoform Engineering ASO",
-            "vectorTopology": "Steric-Blocking ASO",
-            "cai": round(cai + (i % 3 - 1) * 0.01, 3),
-            "uContent": round(u_content + (i % 2) * 0.5, 1),
-            "mfe": round(mfe + i * 8, 1),
-            "initiationEfficiency": max(55, min(95, initiation - i * 2)),
-            "predictedIsoformYield": _estimate_yield(cai, initiation - i * 2),
-            "tlrRisk": "Very Low" if i < 3 else "Low" if i < 6 else "Moderate",
-            "spliceEfficiency": splice_eff,
-            "inFrameStatus": "In-Frame" if in_frame else "Out-of-Frame",
-            "secondaryStructureFlag": "PASSED" if i < 7 else "REVIEW",
-            "sequence": seq,
-            "features": [
-                {"name": "5' UTR", "start": 2, "end": 82, "type": "utr"},
-                {"name": "Kozak Consensus", "start": 83, "end": 89, "type": "kozak"},
-                {"name": "Codon-Optimized ORF", "start": 90, "end": 4449, "type": "orf"},
-                {"name": f"Exon {target_exon_num} (Targeted)", "start": 4450, "end": 4520, "type": "exon"},
-                {"name": "Intron (Splice Mod)", "start": 4521, "end": 4521, "type": "intron"},
-                {"name": "3' UTR", "start": 4522, "end": 4603, "type": "utr3"},
-                {"name": "Poly(A) Tail (120 nt)", "start": 4604, "end": 4723, "type": "polyA"},
-            ],
-            "diagnostics": {
-                "aminoAcidIdentity": round(98.0 + (i % 3) * 0.3, 1),
-                "tlr3Score": max(1, int(u_content * 0.3 + i)),
-                "tlr7Score": max(1, int(u_content * 0.35 + i * 0.5)),
-                "tlr8Score": max(1, int(u_content * 0.35 + i * 0.5)),
-                "mfePlot": ".".join(["(" if j % 7 < 3 else ")" if j % 7 > 4 else "." for j in range(80)]),
-                "fiveUtrHairpin": False,
-                "spliceSiteScore": round(max(0.5, min(0.99, splice_eff / 100)), 2),
+            "constructId": f"iso-{symbol}-e{exon_num}-{offset}",
+            "modality": "Steric-Blocking ASO",
+            "mechanismChemistry": steric_chemistry,
+            "sequence": aso,
+            "targetSequence": target_seq,
+            "transcriptStart": offset,
+            "transcriptEnd": offset + aso_length,
+            "length": aso_length,
+            "gcContent": _calc_gc(aso),
+            "meltingTempC": _calc_tm(aso),
+            "selfMfe": _calc_mfe(aso),
+            "targetDuplexDg": _duplex_dg(aso, target_seq),
+            "targetWindow": window_label,
+            "exonNumber": exon_num,
+            "exonLength": exon_len,
+            "inFrameStatus": frame_label,
+            "spliceSiteStrength": splice_strength,
+            # Deliberately absent, with the reason attached rather than a
+            # plausible-looking number. See the docstring.
+            "predictedIsoformYield": None,
+            "tlrRisk": None,
+            "notComputed": {
+                "predictedIsoformYield": (
+                    "No calibrated model maps ASO thermodynamics to isoform "
+                    "ratio; a fold-change here would be invented."
+                ),
+                "tlrRisk": (
+                    "Innate-immune risk depends on the backbone chemistry and "
+                    "sequence motifs in a way this service does not model."
+                ),
             },
         })
+        if len(candidates) >= max_candidates:
+            break
 
-    candidates.sort(key=lambda c: c["spliceEfficiency"], reverse=True)
+    if not candidates:
+        unavailable["message"] = (
+            f"Exon {exon_num} of {symbol} contains no {aso_length} nt window of "
+            f"unambiguous sequence to design against."
+        )
+        return unavailable
+
+    # More negative dG binds more tightly. Candidates with no dG sort last
+    # rather than being treated as zero.
+    candidates.sort(key=lambda c: (c["targetDuplexDg"] is None,
+                                   c["targetDuplexDg"] if c["targetDuplexDg"] is not None else 0.0))
     for i, c in enumerate(candidates):
         c["rank"] = i + 1
 
-    overview = {
-        "targetGene": symbol,
-        "refSeq": splice_data.get("canonicalTranscript", "NM_000000.1"),
-        "nativeLength": f"{len(cds_clean) // 3} aa" if cds_clean else "N/A",
-        "vectorTopology": "Steric-Blocking ASO",
-        "cai": cai,
-        "uContent": u_content,
-        "primaryMechanism": f"A7 {goal_label} Modulation",
-        "feasibilityScore": max(60, min(95, int(splice_eff * 0.8 + cai * 15))),
-        "predictedHalfLife": "48–72 hrs",
-    }
+    if enforce_in_frame and not in_frame:
+        frame_note = (
+            f"Exon {exon_num} is {exon_len} nt, which is not a multiple of 3. "
+            f"Skipping it shifts the downstream reading frame. Candidates are "
+            f"returned because the exon was explicitly requested."
+        )
+    else:
+        frame_note = None
 
     return {
-        "overview": overview,
+        "status": "OK",
+        "overview": {
+            "targetGene": symbol,
+            "geneId": splice_data.get("geneId") or None,
+            "refSeq": splice_data.get("canonicalTranscript") or None,
+            "transcriptLength": len(mrna),
+            "exonCount": len(exons),
+            "targetExon": exon_num,
+            "exonLength": exon_len,
+            "targetWindow": window_label,
+            "windowStart": lo,
+            "windowEnd": hi,
+            "isoformGoal": isoform_goal,
+            "spliceElementTarget": splice_element_target,
+            "primaryMechanism": "A7 splice-modulating steric block",
+            "inFrameStatus": frame_label,
+            "frameNote": frame_note,
+            "spliceSiteStrength": splice_strength,
+        },
+        "ranking": {
+            "orderedBy": "targetDuplexDg",
+            "caveat": (
+                "Thermodynamic ordering, not a validated activity prediction. "
+                "Measured against 528 held-out experiments, duplex-dG ordering "
+                "ranks below chance because it tracks GC content "
+                "(backend/experiments/ml_analysis, E12). Use it for triage."
+            ),
+        },
+        "dataProvenance": {
+            "exons": "Ensembl canonical transcript, cdsStart/cdsEnd mapped "
+                     "from the real cDNA-to-CDS alignment",
+            "thermodynamics": "primer3 (Tm) and ViennaRNA (MFE, duplex dG)",
+            "spliceSiteStrength": ("Ensembl flanking genomic sequence"
+                                   if splice_strength is not None
+                                   else "not fetched for this exon"),
+        },
         "candidates": candidates,
     }
 

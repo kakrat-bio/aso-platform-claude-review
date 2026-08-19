@@ -29,6 +29,8 @@ export async function generateConstructs(
       splice_element_target: params.spliceElementTarget,
       steric_chemistry: params.stericChemistry,
       enforce_in_frame: params.enforceInFrame,
+      aso_length: params.asoLength ?? 20,
+      max_candidates: params.maxCandidates ?? 12,
     }),
   });
   if (!res.ok) {

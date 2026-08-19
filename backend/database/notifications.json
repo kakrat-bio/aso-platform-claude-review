@@ -1,32 +1,5 @@
 [
   {
-    "id": "n1785747978350",
-    "category": "analysis",
-    "title": "Gene lookup completed for dmd",
-    "detail": "Retrieved data for dmd in homo sapiens.",
-    "timestamp": 1785747978.350923,
-    "read": true,
-    "meta": {}
-  },
-  {
-    "id": "n1785749203061",
-    "category": "analysis",
-    "title": "Gene lookup completed for smn1",
-    "detail": "Retrieved data for smn1 in homo sapiens.",
-    "timestamp": 1785749203.061806,
-    "read": true,
-    "meta": {}
-  },
-  {
-    "id": "n1785749355878",
-    "category": "analysis",
-    "title": "Gene lookup completed for HTT",
-    "detail": "Retrieved data for HTT in homo sapiens.",
-    "timestamp": 1785749355.878338,
-    "read": true,
-    "meta": {}
-  },
-  {
     "id": "n1785749935906",
     "category": "analysis",
     "title": "Generated 10 ASO candidates",
@@ -1797,6 +1770,33 @@
     "detail": "Candidate design completed for ENSG00000049768 (A3).",
     "timestamp": 1786624430.258869,
     "read": true,
+    "meta": {}
+  },
+  {
+    "id": "n1787117718863",
+    "category": "analysis",
+    "title": "Generated 10 ASO candidates",
+    "detail": "Candidate design completed for ENSG00000197386.",
+    "timestamp": 1787117718.863056,
+    "read": false,
+    "meta": {}
+  },
+  {
+    "id": "n1787117723201",
+    "category": "analysis",
+    "title": "Generated 69 upregulation candidates",
+    "detail": "Candidate design completed for ENSG00000144285 (A5).",
+    "timestamp": 1787117723.2010722,
+    "read": false,
+    "meta": {}
+  },
+  {
+    "id": "n1787117727507",
+    "category": "analysis",
+    "title": "Generated 10 guide RNA candidates",
+    "detail": "Guide RNA design completed for ENSG00000197249 (A13).",
+    "timestamp": 1787117727.507082,
+    "read": false,
     "meta": {}
   }
 ]

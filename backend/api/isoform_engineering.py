@@ -38,6 +38,9 @@ async def generate_isoform_constructs(payload: dict):
     splice_element_target = payload.get("splice_element_target", "")
     steric_chemistry = payload.get("steric_chemistry", "")
     enforce_in_frame = payload.get("enforce_in_frame", True)
+    aso_length = int(payload.get("aso_length", 20))
+    max_candidates = int(payload.get("max_candidates", 12))
+    organism = payload.get("organism", "homo_sapiens")
 
     try:
         result = generate_isoform_candidates(
@@ -47,6 +50,9 @@ async def generate_isoform_constructs(payload: dict):
             splice_element_target=splice_element_target,
             steric_chemistry=steric_chemistry,
             enforce_in_frame=enforce_in_frame,
+            aso_length=aso_length,
+            max_candidates=max_candidates,
+            organism=organism,
         )
         return result
     except ValueError as exc:

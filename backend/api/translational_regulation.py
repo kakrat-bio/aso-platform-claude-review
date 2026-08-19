@@ -30,6 +30,27 @@ VALID_ELEMENTS = {
     "5p_utr", "5p_uorf", "3p_utr_mirna", "structured_element",
     "ires_element", "kozak_consensus", "polya_site",
 }
+
+# The scoring vocabulary and the design vocabulary grew up separately and
+# disagree on one term: `/api/mechanisms/options` advertises the uORF element
+# as `uorf` (mechanism_service.TRANSLATIONAL_TARGET_ELEMENTS) while the design
+# service calls it `5p_uorf` (A5's target_region). A client that reads the
+# options list and posts the value back here — which is exactly what the
+# translational-regulation page does — got a 400 on the default element.
+#
+# Accept both spellings and normalise inward. Fixing it here rather than
+# renaming one vocabulary keeps saved reports and stored designs readable.
+ELEMENT_ALIASES = {
+    "uorf": "5p_uorf",
+    "5p_utr_uorf": "5p_uorf",
+    "mirna_site": "3p_utr_mirna",
+    "3p_utr": "3p_utr_mirna",
+}
+
+
+def normalise_element(raw: str) -> str:
+    key = (raw or "").strip().lower()
+    return ELEMENT_ALIASES.get(key, key)
 VALID_GOALS = {"enhance", "suppress"}
 
 
@@ -89,10 +110,15 @@ async def translational_target(payload: TranslationalTargetRequest):
 @router.post("/api/translational-regulation/candidates")
 async def translational_candidates(payload: TranslationalCandidateRequest):
     """Tile oligos across the chosen regulatory element and rank them."""
-    if payload.target_element not in VALID_ELEMENTS:
+    target_element = normalise_element(payload.target_element)
+    if target_element not in VALID_ELEMENTS:
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown target_element: {payload.target_element}",
+            detail=(
+                f"Unknown target_element: {payload.target_element}. Expected "
+                f"one of {', '.join(sorted(VALID_ELEMENTS))} (or an alias: "
+                f"{', '.join(sorted(ELEMENT_ALIASES))})."
+            ),
         )
     if payload.translational_goal not in VALID_GOALS:
         raise HTTPException(
@@ -125,7 +151,7 @@ async def translational_candidates(payload: TranslationalCandidateRequest):
         }
 
     result = generate_translational_candidates(
-        target_element=payload.target_element,
+        target_element=target_element,
         translational_goal=payload.translational_goal,
         mechanism_id=payload.mechanism_id,
         aso_length=payload.aso_length,
@@ -140,7 +166,10 @@ async def translational_candidates(payload: TranslationalCandidateRequest):
         "geneSymbol": payload.gene_symbol.strip().upper(),
         "dataProvenance": provenance,
         "inputs": {
-            "targetElement": payload.target_element,
+            # The normalised spelling, so a report saved from this response
+            # round-trips through the design service unchanged.
+            "targetElement": target_element,
+            "targetElementAsRequested": payload.target_element,
             "translationalGoal": payload.translational_goal,
             "mechanismId": payload.mechanism_id,
             "asoLength": payload.aso_length,

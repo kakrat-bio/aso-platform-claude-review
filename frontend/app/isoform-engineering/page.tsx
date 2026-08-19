@@ -107,8 +107,10 @@ export default function IsoformEngineeringPage() {
           isoformGoal,
           topCandidates: res.candidates.slice(0, 3).map((c) => ({
             constructId: c.constructId,
-            spliceEfficiency: c.spliceEfficiency,
-            yield: c.predictedIsoformYield,
+            sequence: c.sequence,
+            targetDuplexDg: c.targetDuplexDg,
+            meltingTempC: c.meltingTempC,
+            inFrameStatus: c.inFrameStatus,
           })),
         },
       });
@@ -345,18 +347,26 @@ export default function IsoformEngineeringPage() {
                 <div className="px-6 pb-5">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="space-y-3">
-                      <InfoField label="Target Gene & Wild-Type RefSeq" value={`${results.overview.targetGene} · ${results.overview.refSeq}`} />
+                      <InfoField label="Target Gene & Canonical Transcript" value={`${results.overview.targetGene} · ${results.overview.refSeq ?? "—"}`} />
                       <InfoField label="Selected Isoform Goal" value={isoformGoal.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} />
-                      <InfoField label="Native Protein Length" value={results.overview.nativeLength} />
+                      <InfoField label="Transcript Length" value={`${results.overview.transcriptLength.toLocaleString()} nt · ${results.overview.exonCount} exons`} />
                     </div>
                     <div className="space-y-3">
-                      <InfoField label="Codon Adaptation Index (CAI)" value={results.overview.cai.toFixed(2)} valueClassName={results.overview.cai >= 0.92 ? "text-emerald-600" : "text-amber-600"} />
-                      <InfoField label="Uridine Percentage (U%)" value={`${results.overview.uContent.toFixed(1)}%`} valueClassName={results.overview.uContent < 20 ? "text-emerald-600" : "text-amber-600"} />
-                      <InfoField label="Predicted Intracellular Half-Life" value={results.overview.predictedHalfLife} />
+                      <InfoField label="Target Exon" value={`Exon ${results.overview.targetExon} · ${results.overview.exonLength} nt`} />
+                      <InfoField
+                        label="Reading Frame If Skipped"
+                        value={results.overview.inFrameStatus}
+                        valueClassName={results.overview.inFrameStatus === "In-Frame" ? "text-emerald-600" : "text-amber-600"}
+                      />
+                      <InfoField
+                        label="Splice-Site Strength"
+                        value={results.overview.spliceSiteStrength !== null ? results.overview.spliceSiteStrength.toFixed(3) : "Not fetched for this exon"}
+                        valueClassName={results.overview.spliceSiteStrength === null ? "text-slate-400" : undefined}
+                      />
                     </div>
                     <div className="space-y-3">
                       <InfoField label="Primary Mechanism Assigned" value={results.overview.primaryMechanism} />
-                      <InfoField label="Expression Feasibility Score" value={`${results.overview.feasibilityScore}/100`} valueClassName={results.overview.feasibilityScore >= 80 ? "text-emerald-600" : "text-amber-600"} />
+                      <InfoField label="Design Window" value={`${results.overview.targetWindow} (${results.overview.windowStart}–${results.overview.windowEnd})`} />
                     </div>
                   </div>
                 </div>
@@ -371,14 +381,14 @@ export default function IsoformEngineeringPage() {
                         <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Rank</th>
                         <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Construct ID</th>
                         <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Modality</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">CAI</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">U%</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">MFE</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Splice %</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Isoform Yield</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">TLR Risk</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">In-Frame</th>
-                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Structure</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">ASO Sequence (5′→3′)</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Len</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">GC</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Tm</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Duplex ΔG</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Self MFE</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Transcript Pos</th>
+                        <th className="pb-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Frame If Skipped</th>
                         <th className="pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Action</th>
                       </tr>
                     </thead>
@@ -400,42 +410,36 @@ export default function IsoformEngineeringPage() {
                           <td className="py-3 pr-3">
                             <span className="text-[11px] text-slate-600">{c.modality}</span>
                           </td>
+                          <td className="py-3 pr-3">
+                            <span className="text-[10.5px] font-mono text-slate-700">{c.sequence}</span>
+                          </td>
                           <td className="py-3 pr-3 text-right">
-                            <span className={`text-[11.5px] font-semibold ${c.cai >= 0.92 ? "text-emerald-600" : "text-amber-600"}`}>
-                              {c.cai.toFixed(2)}
+                            <span className="text-[11.5px] font-mono text-slate-700">{c.length}</span>
+                          </td>
+                          <td className="py-3 pr-3 text-right">
+                            <span className="text-[11.5px] font-semibold text-slate-700">{c.gcContent.toFixed(1)}%</span>
+                          </td>
+                          <td className="py-3 pr-3 text-right">
+                            <span className="text-[11.5px] font-mono text-slate-700">
+                              {c.meltingTempC !== null ? `${c.meltingTempC.toFixed(1)}°C` : "—"}
                             </span>
                           </td>
                           <td className="py-3 pr-3 text-right">
-                            <span className={`text-[11.5px] font-semibold ${c.uContent < 20 ? "text-emerald-600" : "text-amber-600"}`}>
-                              {c.uContent.toFixed(1)}%
+                            <span className="text-[11.5px] font-mono text-slate-700">
+                              {c.targetDuplexDg !== null ? c.targetDuplexDg.toFixed(1) : "—"}
                             </span>
                           </td>
                           <td className="py-3 pr-3 text-right">
-                            <span className="text-[11.5px] font-mono text-slate-700">{c.mfe.toFixed(1)}</span>
-                          </td>
-                          <td className="py-3 pr-3 text-right">
-                            <span className={`text-[11.5px] font-semibold ${c.spliceEfficiency >= 85 ? "text-emerald-600" : c.spliceEfficiency >= 70 ? "text-amber-600" : "text-red-600"}`}>
-                              {c.spliceEfficiency}%
+                            <span className="text-[11.5px] font-mono text-slate-700">
+                              {c.selfMfe !== null ? c.selfMfe.toFixed(1) : "—"}
                             </span>
                           </td>
                           <td className="py-3 pr-3">
-                            <Pill tone={c.predictedIsoformYield.includes("High") ? "green" : c.predictedIsoformYield.includes("Medium") ? "blue" : "amber"}>
-                              {c.predictedIsoformYield}
-                            </Pill>
+                            <span className="text-[11px] text-slate-600">{c.transcriptStart}–{c.transcriptEnd}</span>
                           </td>
                           <td className="py-3 pr-3">
-                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.tlrRisk.includes("Very Low") ? "border-emerald-200 bg-emerald-50 text-emerald-700" : c.tlrRisk.includes("Low") ? "border-blue-200 bg-blue-50 text-blue-700" : c.tlrRisk.includes("Moderate") ? "border-amber-200 bg-amber-50 text-amber-700" : "border-red-200 bg-red-50 text-red-700"}`}>
-                              {c.tlrRisk}
-                            </span>
-                          </td>
-                          <td className="py-3 pr-3">
-                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.inFrameStatus === "In-Frame" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}>
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.inFrameStatus === "In-Frame" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
                               {c.inFrameStatus}
-                            </span>
-                          </td>
-                          <td className="py-3 pr-3">
-                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${c.secondaryStructureFlag === "PASSED" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}>
-                              {c.secondaryStructureFlag}
                             </span>
                           </td>
                           <td className="py-3">
@@ -471,24 +475,20 @@ export default function IsoformEngineeringPage() {
                   </div>
                   <div className="px-6 pb-5 space-y-5">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Full Transcript Feature Map</p>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 overflow-x-auto">
-                        <div className="flex items-center gap-1 min-w-[600px]">
-                          {selectedCandidate.features.map((f, i) => (
-                            <div key={i} className="flex items-center gap-1">
-                              <div className={`flex flex-col items-center rounded-md px-2 py-1.5 text-[10px] font-medium text-center min-w-[70px] ${f.type === "utr" ? "bg-blue-50 text-blue-600" : f.type === "kozak" ? "bg-emerald-50 text-emerald-600" : f.type === "orf" ? "bg-slate-200 text-slate-700" : f.type === "exon" ? "bg-indigo-50 text-indigo-700" : f.type === "intron" ? "bg-amber-50 text-amber-700" : f.type === "splice" ? "bg-purple-50 text-purple-700" : f.type === "scarsplice" ? "bg-teal-50 text-teal-700" : f.type === "polyA" ? "bg-rose-50 text-rose-600" : "bg-slate-100 text-slate-600"}`}>
-                                <span className="font-mono text-[9px] opacity-70">{f.start}-{f.end}</span>
-                                <span className="leading-tight">{f.name}</span>
-                              </div>
-                              {i < selectedCandidate.features.length - 1 && <span className="text-slate-300 text-[10px]">→</span>}
-                            </div>
-                          ))}
-                        </div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Target Location</p>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-700 space-y-1">
+                        <p>
+                          Exon <span className="font-semibold">{selectedCandidate.exonNumber}</span> ({selectedCandidate.exonLength} nt),{" "}
+                          {selectedCandidate.targetWindow}
+                        </p>
+                        <p className="font-mono text-[10.5px] text-slate-500">
+                          transcript positions {selectedCandidate.transcriptStart}–{selectedCandidate.transcriptEnd}
+                        </p>
                       </div>
                     </div>
 
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Construct Transcript Sequence (5' → 3')</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">ASO Sequence (5&apos; &rarr; 3&apos;)</p>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 font-mono text-[11px] text-emerald-400 break-all leading-relaxed select-all">
                           {selectedCandidate.sequence}
@@ -497,37 +497,54 @@ export default function IsoformEngineeringPage() {
                           {copied ? <><Check className="h-3 w-3 text-emerald-500" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
                         </button>
                       </div>
+                      <p className="mt-1.5 text-[10px] text-slate-500">
+                        Reverse complement of transcript window{" "}
+                        <span className="font-mono">{selectedCandidate.targetSequence}</span>
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Amino Acid Sequence Identity</p>
-                        <p className="text-[14px] font-bold text-emerald-600">{selectedCandidate.diagnostics.aminoAcidIdentity}%</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Match with wild-type functional protein</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Melting Temperature</p>
+                        <p className="text-[14px] font-bold text-slate-700">
+                          {selectedCandidate.meltingTempC !== null ? `${selectedCandidate.meltingTempC.toFixed(1)} °C` : "—"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">primer3, SantaLucia nearest-neighbour (unmodified backbone)</p>
                       </div>
                       <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Splice Site Score</p>
-                        <p className="text-[14px] font-bold text-slate-700">{selectedCandidate.diagnostics.spliceSiteScore.toFixed(2)}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">MaxEntScan-like splice site strength</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Target Duplex &Delta;G</p>
+                        <p className="text-[14px] font-bold text-slate-700">
+                          {selectedCandidate.targetDuplexDg !== null ? `${selectedCandidate.targetDuplexDg.toFixed(2)} kcal/mol` : "—"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">ViennaRNA duplexfold against the real transcript window</p>
                       </div>
                       <div className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">TLR3 / TLR7 / TLR8 Risk</p>
-                        <p className="text-[14px] font-bold text-slate-700">{selectedCandidate.diagnostics.tlr3Score} / {selectedCandidate.diagnostics.tlr7Score} / {selectedCandidate.diagnostics.tlr8Score}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Innate immune receptor activation risk</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Splice-Site Strength</p>
+                        <p className={`text-[14px] font-bold ${selectedCandidate.spliceSiteStrength !== null ? "text-slate-700" : "text-slate-400"}`}>
+                          {selectedCandidate.spliceSiteStrength !== null ? selectedCandidate.spliceSiteStrength.toFixed(3) : "Not fetched"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">From Ensembl flanking genomic sequence, when available</p>
                       </div>
                     </div>
 
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">5' UTR / Ribosome Entry Secondary Structure (ViennaRNA MFE)</p>
-                      <div className="rounded-lg border border-slate-200 bg-slate-900 px-4 py-3 font-mono text-[11px] text-slate-300 break-all leading-relaxed">
-                        {selectedCandidate.diagnostics.mfePlot}
+                    {selectedCandidate.notComputed && Object.keys(selectedCandidate.notComputed).length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Not Computed</p>
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+                          {Object.entries(selectedCandidate.notComputed).map(([field, reason]) => (
+                            <p key={field} className="text-[10.5px] text-amber-900">
+                              <span className="font-semibold font-mono">{field}</span>: {reason}
+                            </p>
+                          ))}
+                        </div>
                       </div>
-                      <div className="mt-2">
-                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${selectedCandidate.diagnostics.fiveUtrHairpin ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
-                          {selectedCandidate.diagnostics.fiveUtrHairpin ? "FAILED — 5' UTR Hairpin Obstacle Detected" : "PASSED — No 5' UTR Hairpin Obstacles"}
-                        </span>
-                      </div>
-                    </div>
+                    )}
+
+                    {results.ranking && (
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
+                        Ranked by <span className="font-mono">{results.ranking.orderedBy}</span>. {results.ranking.caveat}
+                      </p>
+                    )}
                   </div>
                 </Card>
                 </div>
