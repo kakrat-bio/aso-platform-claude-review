@@ -492,6 +492,22 @@ def generate_protein_replacement_candidates(
     ires_selection = _validate_choice(ires_selection, VALID_IRES_SELECTIONS,
                                       "ires_selection", required=False)
 
+    # A circular RNA is covalently closed: it has no 5' cap and no free 3' end
+    # to carry a poly(A) tail, so cap-dependent scanning cannot initiate on it.
+    # Translation has to be driven by an internal ribosome entry site or by
+    # m6A-mediated recruitment. Emitting a circRNA "protein replacement"
+    # construct without one produces a molecule that cannot make protein,
+    # which the previous code did happily: `ires_selection` was validated and
+    # then used only to draw a feature box, so passing it or omitting it gave
+    # byte-identical constructs.
+    if rna_modality == "circrna" and not ires_selection:
+        raise ValueError(
+            "circRNA requires ires_selection: a covalently closed RNA has no "
+            "cap and no poly(A) tail, so translation must be initiated "
+            "internally. Choose one of "
+            f"{', '.join(sorted(VALID_IRES_SELECTIONS))}."
+        )
+
     symbol = target_symbol.strip().upper()
     if not symbol:
         raise ValueError("target_symbol is required")
@@ -533,8 +549,22 @@ def generate_protein_replacement_candidates(
     cai = _calc_cai(optimized_cds)
 
     modalities = []
+    omitted: list[dict[str, str]] = []
     if rna_modality in ("circrna", "any"):
-        modalities.append("circrna")
+        if ires_selection:
+            modalities.append("circrna")
+        else:
+            # Under "any" this is not an error — the other two architectures
+            # are still buildable — but a circRNA without an internal entry
+            # site cannot be translated, so it is omitted and said so rather
+            # than emitted as a construct that cannot make protein.
+            omitted.append({
+                "modality": "circrna",
+                "reason": ("A covalently closed RNA has no cap and no poly(A) "
+                           "tail, so translation must be initiated internally. "
+                           "Supply ires_selection to include the circRNA "
+                           "architecture."),
+            })
     if rna_modality in ("linear", "any"):
         modalities.append("linear")
     if rna_modality in ("sarna", "any"):
@@ -701,7 +731,8 @@ def generate_protein_replacement_candidates(
         "predictedHalfLife": _estimate_half_life(modalities[0]),
     }
 
-    return {"overview": overview, "candidates": candidates}
+    return {"overview": overview, "omittedArchitectures": omitted,
+            "candidates": candidates}
 
 
 def get_protein_replacement_options() -> dict[str, Any]:

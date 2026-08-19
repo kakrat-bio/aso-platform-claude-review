@@ -80,6 +80,46 @@ PLATFORMS: dict[str, dict[str, Any]] = {
 
 _COMPLEMENT = {"A": "U", "U": "A", "G": "C", "C": "G"}
 
+# ADAR nearest-neighbour preference, from the deaminase's own substrate
+# selectivity rather than from the guide design.
+#
+# ADAR2 reads the bases flanking the target adenosine. The 5' neighbour is the
+# dominant term and G immediately 5' is strongly disfavoured; the 3' neighbour
+# is a weaker but real preference for G. Both REPAIR and CIRTS place an ADAR
+# or ADAR-like deaminase on the target, so this governs whether the intended
+# adenosine is edited efficiently AND how likely each bystander adenosine is
+# to be hit. Ranks, not rates: the ordering is well documented, the absolute
+# efficiencies are context- and construct-specific and are not asserted here.
+ADAR_5P_PREFERENCE = {"U": 4, "A": 3, "C": 2, "G": 1}
+ADAR_3P_PREFERENCE = {"G": 4, "C": 3, "A": 2, "U": 1}
+ADAR_PREFERENCE_NOTE = (
+    "ADAR2 prefers a U or A immediately 5' of the target adenosine and "
+    "disfavours G there; 3' it prefers G. Reported as an ordinal rank, not a "
+    "predicted editing rate."
+)
+
+
+def _adar_context(seq: str, index: int) -> dict[str, Any]:
+    """Nearest-neighbour context of the adenosine at `index` within `seq`."""
+    five_p = seq[index - 1] if index > 0 else None
+    three_p = seq[index + 1] if index + 1 < len(seq) else None
+    r5 = ADAR_5P_PREFERENCE.get(five_p or "", 0)
+    r3 = ADAR_3P_PREFERENCE.get(three_p or "", 0)
+    if r5 >= 3 and r3 >= 3:
+        favourability = "favourable"
+    elif r5 <= 1:
+        favourability = "poor (G immediately 5' is the strongest negative)"
+    else:
+        favourability = "intermediate"
+    return {
+        "fivePrimeNeighbour": five_p,
+        "threePrimeNeighbour": three_p,
+        "triplet": f"{five_p or '-'}A{three_p or '-'}",
+        "fivePrimeRank": r5,
+        "threePrimeRank": r3,
+        "favourability": favourability,
+    }
+
 
 def _revcomp(seq: str) -> str:
     return "".join(_COMPLEMENT[b] for b in reversed(seq.upper()))
@@ -161,9 +201,25 @@ def design_editor_guides(
 
         gc = round((spacer_seq.count("G") + spacer_seq.count("C"))
                    / len(spacer_seq) * 100, 1)
-        # Adenosines elsewhere in the duplex are candidate bystander edits.
-        bystanders = [i for i, b in enumerate(window)
-                      if b == expected and (win_start + i) != edit_position]
+        target_context = _adar_context(mrna, edit_position)
+
+        # Adenosines elsewhere in the duplex are candidate bystander edits —
+        # but they are not equally likely. An adenosine with a G immediately
+        # 5' of it is a poor ADAR substrate and is a much smaller risk than one
+        # in a UAG context. Counting them all equally overstated the risk of a
+        # window full of G-preceded adenosines and understated one containing a
+        # single perfect substrate.
+        bystanders = []
+        for i, b in enumerate(window):
+            if b != expected or (win_start + i) == edit_position:
+                continue
+            ctx = _adar_context(mrna, win_start + i)
+            bystanders.append({
+                "transcriptPosition": win_start + i,
+                "spacerPosition": len(window) - i,
+                **ctx,
+            })
+        high_risk = [b for b in bystanders if b["favourability"] == "favourable"]
 
         candidates.append({
             "guideId": f"{mechanism_id}-{gene_symbol or ensembl_gene_id}-{offset}",
@@ -180,8 +236,11 @@ def design_editor_guides(
             "editPosition": edit_position,
             "gcContent": gc,
             "duplexDg": duplex_dg,
+            "targetAdarContext": target_context,
             "bystanderCount": len(bystanders),
-            "bystanderPositions": bystanders[:20],
+            "highRiskBystanderCount": len(high_risk),
+            "bystanders": bystanders[:20],
+            "adarPreferenceNote": ADAR_PREFERENCE_NOTE,
             "scaffoldRequired": {
                 "role": platform["scaffoldRole"],
                 "source": platform["scaffoldSource"],
@@ -197,16 +256,28 @@ def design_editor_guides(
                 "message": ("The edit site is too close to a transcript end "
                             f"to place a {spacer_nt} nt spacer around it.")}
 
-    # Fewer bystander adenosines first, then tighter duplex.
-    candidates.sort(key=lambda c: (c["bystanderCount"],
+    # Rank on bystanders that ADAR would actually edit, then on the total,
+    # then on duplex stability. A window carrying ten G-preceded adenosines is
+    # a safer guide than one carrying two in UAG context.
+    candidates.sort(key=lambda c: (c["highRiskBystanderCount"],
+                                   c["bystanderCount"],
                                    c["duplexDg"] if c["duplexDg"] is not None else 0.0))
     for i, c in enumerate(candidates[:max_candidates]):
         c["rank"] = i + 1
 
+    target_context = _adar_context(mrna, edit_position)
     return {
         "status": "OK",
         "mechanismId": mechanism_id,
         "platform": platform["name"],
+        "targetAdarContext": target_context,
+        "targetContextWarning": (
+            None if target_context["fivePrimeRank"] >= 2 else
+            f"The target adenosine sits in a {target_context['triplet']} "
+            f"context. A guanosine immediately 5' is ADAR's least favoured "
+            f"neighbour, so editing at this site is expected to be "
+            f"inefficient regardless of guide placement."
+        ),
         "geneSymbol": gene_symbol or ensembl_gene_id,
         "architecture": (
             f"{spacer_nt} nt spacer with a {platform['mismatchBase']} "
@@ -214,11 +285,14 @@ def design_editor_guides(
             f"{platform['scaffoldRole']}"
         ),
         "ranking": {
-            "orderedBy": "bystanderCount, then duplexDg",
+            "orderedBy": "highRiskBystanderCount, then bystanderCount, then duplexDg",
             "rationale": (
                 "Every other adenosine inside the guide-target duplex is a "
-                "candidate bystander edit, so a spacer placement that "
-                "encloses fewer of them is preferred."
+                "candidate bystander edit, but not an equal one: ADAR "
+                "disfavours an adenosine with a G immediately 5' of it and "
+                "prefers one in a U-A-G context. Placements enclosing fewer "
+                "GOOD ADAR substrates are preferred over placements enclosing "
+                "fewer adenosines overall."
             ),
         },
         "candidates": candidates[:max_candidates],

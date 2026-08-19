@@ -368,6 +368,14 @@ def test_every_designable_mechanism_has_a_designer():
         rule = json.loads(pathlib.Path(path).read_text())
         arb = rule.get("arbitration", {})
         mech = rule.get("mechanismId") or pathlib.Path(path).parent.name
+        # A mechanism is covered either by a designer whitelist above, or by
+        # an explicit designRoute naming the endpoint and the parameters that
+        # build it (A24/A26 route into the protein-replacement designer's
+        # linear and circRNA architectures).
+        route = arb.get("designRoute")
+        if route:
+            assert route.get("endpoint"), f"{mech} designRoute names no endpoint"
+            continue
         if arb.get("designAvailable") and mech not in covered:
             orphans.append(mech)
     assert not orphans, (
@@ -421,9 +429,18 @@ def test_sirna_duplex_strands_are_complementary():
         assert c["guideStrand"].endswith(c["overhang"])
         assert c["passengerStrand"].endswith(c["overhang"])
         assert c["seedRegion"] == c["guideCore"][1:8]
-    # Ranked so the guide's 5' end is the looser one.
-    scores = [c["asymmetryScore"] for c in out["candidates"]]
-    assert scores == sorted(scores, reverse=True)
+    # Ranking is Ui-Tei positional rules first, thermodynamic gap as the
+    # tie-break — the rules read Argonaute's MID-pocket preference directly,
+    # so they outrank the bulk free-energy difference. This test used to
+    # assert a pure asymmetry ordering, which described the earlier design.
+    keys = [(-c["uiTeiRules"]["passed"], -c["asymmetryScore"])
+            for c in out["candidates"]]
+    assert keys == sorted(keys)
+    # When the two measures disagree the candidate must say so rather than
+    # letting the ranking silently pick a side.
+    for c in out["candidates"]:
+        if c["uiTeiRules"]["passed"] == c["uiTeiRules"]["total"] and c["asymmetryScore"] <= 0:
+            assert any("disagree" in f for f in c["flags"])
 
 
 def test_editor_guides_refuse_the_wrong_target_base():

@@ -49,6 +49,12 @@ DEFAULT_OVERHANG = "dTdT"
 SEED_START, SEED_END = 2, 8          # guide positions, 1-based inclusive
 # How many terminal base pairs enter the 5'-end stability comparison.
 ASYMMETRY_WINDOW_NT = 4
+# Ago2 cleaves the target between the bases opposite guide positions 10 and 11.
+AGO2_CLEAVAGE_GUIDE_POSITION = 10
+# Ui-Tei's AU-rich window: guide positions 1-7.
+AU_RICH_WINDOW = 7
+# A GC run this long or longer impedes duplex unwinding.
+MAX_GC_RUN = 9
 
 _COMPLEMENT = {"A": "U", "U": "A", "G": "C", "C": "G"}
 
@@ -69,6 +75,75 @@ def _end_stability(seq: str) -> float | None:
         return round(primer3.calc_heterodimer(dna, comp).dg / 1000.0, 3)
     except Exception:
         return None
+
+
+def _ui_tei_rules(guide: str, passenger: str) -> dict[str, Any]:
+    """The four Ui-Tei asymmetry rules, checked position by position.
+
+    Bulk duplex-end thermodynamics is only half the asymmetry story. Ui-Tei
+    (2004) and Amarzguioui (2004) found that WHICH base sits at particular
+    positions predicts strand selection better than the free-energy difference
+    alone, because Argonaute's MID pocket reads the guide's 5' nucleotide
+    directly rather than inferring it from stability:
+
+    i.   A or U at guide position 1 (5' end). The MID domain binds a
+         5'-monophosphate with an adjacent A/U far better than G/C.
+    ii.  G or C at guide position 19 (the 3' end, which pairs with the
+         passenger's 5' end). This makes the passenger end the tight one.
+    iii. At least 4 of guide positions 1-7 are A or U, extending the loose
+         5' end beyond the terminal base pair.
+    iv.  No GC run of 9 nt or longer anywhere in the duplex, which would
+         resist helicase unwinding.
+
+    Returned as individually named pass/fail calls with the reason, not as a
+    single score. Each rule is a documented observation; a weighting that
+    combined them into one number would not be.
+    """
+    checks = []
+    p1 = guide[0]
+    checks.append({
+        "rule": "guide_position_1_is_A_or_U",
+        "passes": p1 in "AU",
+        "observed": p1,
+        "reasoning": ("Argonaute's MID pocket accommodates an A or U at the "
+                      "guide 5' end far better than a G or C, and this is the "
+                      "single strongest strand-selection determinant."),
+    })
+    p19 = guide[-1]
+    checks.append({
+        "rule": "guide_position_19_is_G_or_C",
+        "passes": p19 in "GC",
+        "observed": p19,
+        "reasoning": ("The guide's 3' end pairs with the passenger's 5' end. "
+                      "A G or C here makes that end the tightly bound one, so "
+                      "the passenger is not the strand handed to RISC."),
+    })
+    au = sum(1 for b in guide[:AU_RICH_WINDOW] if b in "AU")
+    checks.append({
+        "rule": "guide_positions_1_to_7_AU_rich",
+        "passes": au >= 4,
+        "observed": f"{au}/7 A or U",
+        "reasoning": ("An AU-rich 5' third keeps the whole guide 5' region "
+                      "loosely paired, not just the terminal base pair."),
+    })
+    longest_gc = 0
+    run = 0
+    for b in passenger:
+        run = run + 1 if b in "GC" else 0
+        longest_gc = max(longest_gc, run)
+    checks.append({
+        "rule": "no_GC_run_of_9_or_more",
+        "passes": longest_gc < MAX_GC_RUN,
+        "observed": f"longest GC run {longest_gc} nt",
+        "reasoning": ("A long GC stretch resists the helicase unwinding that "
+                      "separates the two strands during RISC loading."),
+    })
+    return {
+        "checks": checks,
+        "passed": sum(1 for c in checks if c["passes"]),
+        "total": len(checks),
+        "source": "Ui-Tei et al. 2004; Amarzguioui & Prydz 2004",
+    }
 
 
 def _gc(seq: str) -> float:
@@ -131,7 +206,11 @@ def design_sirna_duplexes(
             duplex_dg = None
 
         gc = _gc(core)
+        ui_tei = _ui_tei_rules(guide_core, core)
         flags = []
+        for chk in ui_tei["checks"]:
+            if not chk["passes"]:
+                flags.append(f"Ui-Tei: {chk['rule']} not met ({chk['observed']})")
         if not (30.0 <= gc <= 52.0):
             flags.append(
                 f"GC {gc}% outside the 30-52% window associated with "
@@ -141,6 +220,17 @@ def design_sirna_duplexes(
                 "Passenger 5' end is the looser one — the passenger strand is "
                 "the more likely to be loaded, which silences the wrong "
                 "transcript")
+        # The two asymmetry measures can disagree: the positional rules read
+        # single bases at positions 1 and 19, while the thermodynamic term
+        # averages four terminal base pairs. A guide starting U-G-C-C passes
+        # rule (i) while its terminal tetramer is the stabler of the two. Say
+        # so instead of letting the ranking quietly pick a winner.
+        if ui_tei["passed"] == ui_tei["total"] and asymmetry <= 0:
+            flags.append(
+                "Ui-Tei positional rules and the duplex-end free-energy gap "
+                "disagree here: the rules favour guide loading, the 4-bp "
+                "terminal comparison does not. Treat the strand-selection "
+                "prediction as unresolved for this site.")
         if "GGGG" in core or "GGGG" in guide_core:
             flags.append("Run of 4+ G: G-quadruplex and synthesis liability")
 
@@ -161,6 +251,10 @@ def design_sirna_duplexes(
             "guide5pEndDg": dg_guide_5p,
             "passenger5pEndDg": dg_pass_5p,
             "asymmetryScore": asymmetry,
+            "uiTeiRules": ui_tei,
+            # Ago2 cleaves the target phosphodiester bond opposite guide
+            # positions 10/11, so this is where the transcript is cut.
+            "predictedCleavageSite": start + DUPLEX_CORE_NT - AGO2_CLEAVAGE_GUIDE_POSITION,
             "flags": flags,
             "notComputed": {
                 "seedOffTargetLoad": (
@@ -182,7 +276,11 @@ def design_sirna_duplexes(
 
     # Rank by asymmetry: the larger the gap in favour of a loose guide 5'
     # end, the more reliably the guide strand is the one loaded.
-    candidates.sort(key=lambda c: -c["asymmetryScore"])
+    # Rank on the positional rules first — they read Argonaute's actual
+    # preference — and use the thermodynamic gap to break ties within a rule
+    # count.
+    candidates.sort(key=lambda c: (-c["uiTeiRules"]["passed"],
+                                   -c["asymmetryScore"]))
     for i, c in enumerate(candidates[:max_candidates]):
         c["rank"] = i + 1
 
@@ -197,12 +295,14 @@ def design_sirna_duplexes(
             f"overhangs on both strands ({overhang})"
         ),
         "ranking": {
-            "orderedBy": "asymmetryScore",
+            "orderedBy": "uiTeiRules.passed, then asymmetryScore",
             "rationale": (
                 "Argonaute loads the strand whose 5' end is less stably "
-                "paired (Khvorova 2003, Schwarz 2003). A positive asymmetry "
-                "score means the guide's 5' end is the looser one, so the "
-                "guide is the strand expected to enter RISC."
+                "paired (Khvorova 2003, Schwarz 2003), and the Ui-Tei "
+                "positional rules predict which strand that is more reliably "
+                "than the bulk free-energy gap, because the MID pocket reads "
+                "the guide's 5' nucleotide directly. Rules first, "
+                "thermodynamic gap as the tie-break."
             ),
         },
         "dataProvenance": {
